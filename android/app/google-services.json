@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "819903404890",
+    "project_id": "recomededsystem",
+    "storage_bucket": "recomededsystem.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:819903404890:android:d5362c4b26cd8cab34f163",
+        "android_client_info": {
+          "package_name": "com.example.recomended_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwlnwaEij2Pfp599ZsRQrNFrvLeYwen2w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

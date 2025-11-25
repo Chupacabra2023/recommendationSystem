@@ -1,0 +1,319 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/recommendation_models.dart';
+import '../utils/category_mapper.dart';
+import 'recommendation_service.dart';
+import 'dart:math';
+
+class RecommendationEngine implements RecommendationService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Váhy pre scoring
+  static const double CATEGORY_WEIGHT = 0.4;  // 40%
+  static const double DISTANCE_WEIGHT = 0.3;  // 30%
+  static const double RATING_WEIGHT = 0.2;    // 20%
+  static const double POPULARITY_WEIGHT = 0.1; // 10%
+
+  // ════════════════════════════════════════════════════════════
+  // IMPLEMENTÁCIA: getUserProfile (s hlavnými kategóriami)
+  // ════════════════════════════════════════════════════════════
+
+  @override
+  Future<Map<String, double>> getUserProfile(String userId) async {
+    print('📊 Počítam profil pre užívateľa $userId...');
+
+    try {
+      // 1. Načítaj užívateľa
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+
+      if (!userDoc.exists) {
+        print('❌ Užívateľ $userId neexistuje');
+        return {};
+      }
+
+      final user = UserProfile.fromJson(userDoc.data()!, userId);
+
+      // 2. Ak nemá žiadne navštívené eventy
+      if (user.visitedEventIds.isEmpty) {
+        print('ℹ️ Užívateľ ešte nenavštívil žiadne eventy');
+        return _getDefaultProfile();
+      }
+
+      // 3. Načítaj všetky navštívené eventy a mapuj na hlavné kategórie
+      Map<String, int> mainCategoryCounts = {};
+      int totalEvents = 0;
+
+      for (String eventId in user.visitedEventIds) {
+        try {
+          final eventDoc = await _firestore
+              .collection('events')
+              .doc(eventId)
+              .get();
+
+          if (eventDoc.exists) {
+            final event = Event.fromJson(eventDoc.data()!, eventId);
+
+            // 🔥 KĽÚČOVÁ ZMENA: Konvertuj podkategóriu → hlavná kategória
+            String mainCategory = CategoryMapper.getMainCategory(event.category);
+
+            mainCategoryCounts[mainCategory] =
+                (mainCategoryCounts[mainCategory] ?? 0) + 1;
+            totalEvents++;
+          }
+        } catch (e) {
+          print('⚠️ Chyba pri načítaní eventu $eventId: $e');
+        }
+      }
+
+      // 4. Prepočítaj na percentá (0.0 - 1.0)
+      Map<String, double> preferences = {};
+
+      if (totalEvents > 0) {
+        mainCategoryCounts.forEach((category, count) {
+          preferences[category] = count / totalEvents;
+        });
+      }
+
+      print('✅ Profil vypočítaný (${preferences.length} kategórií):');
+      preferences.forEach((cat, pref) {
+        print('   $cat: ${(pref * 100).toStringAsFixed(1)}%');
+      });
+
+      return preferences;
+
+    } catch (e) {
+      print('❌ Chyba pri výpočte profilu: $e');
+      return {};
+    }
+  }
+
+  /// Defaultný profil pre nových užívateľov (prázdny = všetky rovnaké)
+  Map<String, double> _getDefaultProfile() {
+    return {};
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // HELPER: Výpočet vzdialenosti (Haversine formula)
+  // ════════════════════════════════════════════════════════════
+
+  double _calculateDistance(GeoPoint point1, GeoPoint point2) {
+    const double earthRadius = 6371; // km
+
+    double lat1 = point1.latitude * pi / 180;
+    double lat2 = point2.latitude * pi / 180;
+    double dLat = (point2.latitude - point1.latitude) * pi / 180;
+    double dLng = (point2.longitude - point1.longitude) * pi / 180;
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1) * cos(lat2) *
+            sin(dLng / 2) * sin(dLng / 2);
+
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // CORE: Skóruj jeden event (s hlavnými kategóriami)
+  // ════════════════════════════════════════════════════════════
+
+  ScoredEvent _scoreEvent({
+    required Event event,
+    required UserProfile user,
+    required Map<String, double> userProfile,
+  }) {
+
+    // Už bol na tomto evente? Skip.
+    if (user.visitedEventIds.contains(event.id)) {
+      return ScoredEvent(
+        event: event,
+        score: -1,
+        scoreBreakdown: {'already_visited': -1},
+      );
+    }
+
+    // Event je v minulosti? Skip.
+    if (event.date.isBefore(DateTime.now())) {
+      return ScoredEvent(
+        event: event,
+        score: -1,
+        scoreBreakdown: {'past_event': -1},
+      );
+    }
+
+    Map<String, double> breakdown = {};
+
+    // 🔥 KĽÚČOVÁ ZMENA: Konvertuj podkategóriu eventu na hlavnú
+    String mainCategory = CategoryMapper.getMainCategory(event.category);
+    breakdown['main_category'] = mainCategory.hashCode.toDouble(); // len pre debug
+
+    // ────────────────────────────────────────────────────────
+    // 1️⃣ KATEGÓRIA (40% váha) - podľa hlavnej kategórie
+    // ────────────────────────────────────────────────────────
+    double categoryMatch = userProfile[mainCategory] ?? 0.0;
+
+    // Pre nových užívateľov (bez preferencií) dáme všetkým rovnakú šancu
+    if (userProfile.isEmpty) {
+      categoryMatch = 0.5; // 50% - neutrálne
+    } else if (categoryMatch == 0.0) {
+      // Užívateľ túto kategóriu ešte nenavštívil → malá šanca
+      categoryMatch = 0.05; // 5%
+    }
+
+    double categoryScore = categoryMatch * CATEGORY_WEIGHT;
+    breakdown['category'] = categoryScore;
+    breakdown['category_match'] = categoryMatch;
+
+    // ────────────────────────────────────────────────────────
+    // 2️⃣ VZDIALENOSŤ (30% váha)
+    // ────────────────────────────────────────────────────────
+    double distance = _calculateDistance(user.location, event.location);
+
+    // Normalizácia: bližšie = lepšie skóre
+    // Formula: 1 / (1 + distance/10)
+    // Príklady: 0km = 1.0, 5km = 0.66, 10km = 0.5, 20km = 0.33
+    double distanceScore = 1 / (1 + distance / 10);
+    distanceScore = distanceScore * DISTANCE_WEIGHT;
+
+    breakdown['distance'] = distanceScore;
+    breakdown['distance_km'] = distance;
+
+    // ────────────────────────────────────────────────────────
+    // 3️⃣ RATING (20% váha)
+    // ────────────────────────────────────────────────────────
+    double ratingScore = 0.0;
+
+    if (event.totalRatings > 0) {
+      // Má hodnotenia → použi ich
+      ratingScore = (event.rating / 5.0) * RATING_WEIGHT;
+    } else {
+      // Nový event → daj mu priemerné skóre
+      ratingScore = 0.5 * RATING_WEIGHT; // Neutrálne
+    }
+
+    breakdown['rating'] = ratingScore;
+    breakdown['rating_value'] = event.rating;
+
+    // ────────────────────────────────────────────────────────
+    // 4️⃣ POPULARITA (10% váha)
+    // ────────────────────────────────────────────────────────
+    // Normalizácia: 0-100 účastníkov → 0.0-1.0
+    double popularityScore = min(event.attendees.length / 100, 1.0);
+    popularityScore = popularityScore * POPULARITY_WEIGHT;
+
+    breakdown['popularity'] = popularityScore;
+    breakdown['attendees_count'] = event.attendees.length.toDouble();
+
+    // ────────────────────────────────────────────────────────
+    // CELKOVÉ SKÓRE
+    // ────────────────────────────────────────────────────────
+    double totalScore =
+        categoryScore +
+            distanceScore +
+            ratingScore +
+            popularityScore;
+
+    return ScoredEvent(
+      event: event,
+      score: totalScore,
+      scoreBreakdown: breakdown,
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // IMPLEMENTÁCIA: getRecommendations
+  // ════════════════════════════════════════════════════════════
+
+  @override
+  Future<List<ScoredEvent>> getRecommendations({
+    required String userId,
+    int count = 10,
+    int maxDistanceKm = 50,
+  }) async {
+
+    print('🎯 Hľadám odporúčania pre $userId...');
+
+    try {
+      // ────────────────────────────────────────────────────────
+      // 1. Načítaj užívateľa
+      // ────────────────────────────────────────────────────────
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+
+      if (!userDoc.exists) {
+        throw Exception('Užívateľ $userId neexistuje');
+      }
+
+      final user = UserProfile.fromJson(userDoc.data()!, userId);
+      print('👤 Užívateľ: ${user.name}');
+      print('📍 Lokácia: ${user.location.latitude}, ${user.location.longitude}');
+      print('📚 Navštívené eventy: ${user.visitedEventIds.length}');
+
+      // ────────────────────────────────────────────────────────
+      // 2. Vypočítaj užívateľský profil (z 9 hlavných kategórií)
+      // ────────────────────────────────────────────────────────
+      final userProfile = await getUserProfile(userId);
+
+      // ────────────────────────────────────────────────────────
+      // 3. Načítaj všetky budúce eventy
+      // ────────────────────────────────────────────────────────
+      final eventsSnapshot = await _firestore
+          .collection('events')
+          .where('date', isGreaterThan: Timestamp.now())
+          .get();
+
+      print('📦 Načítaných ${eventsSnapshot.docs.length} budúcich eventov');
+
+      // ────────────────────────────────────────────────────────
+      // 4. Skóruj každý event
+      // ────────────────────────────────────────────────────────
+      List<ScoredEvent> scoredEvents = [];
+
+      for (var doc in eventsSnapshot.docs) {
+        final event = Event.fromJson(doc.data(), doc.id);
+
+        final scored = _scoreEvent(
+          event: event,
+          user: user,
+          userProfile: userProfile,
+        );
+
+        // Pridaj len eventy s pozitívnym skóre
+        if (scored.score > 0) {
+          // Filter: Max vzdialenosť
+          double distance = scored.scoreBreakdown['distance_km'] ?? 999;
+
+          if (distance <= maxDistanceKm) {
+            scoredEvents.add(scored);
+          }
+        }
+      }
+
+      print('✅ Skórovaných ${scoredEvents.length} eventov');
+
+      // ────────────────────────────────────────────────────────
+      // 5. Zoradi od najvyššieho skóre
+      // ────────────────────────────────────────────────────────
+      scoredEvents.sort((a, b) => b.score.compareTo(a.score));
+
+      // ────────────────────────────────────────────────────────
+      // 6. Vráť TOP N
+      // ────────────────────────────────────────────────────────
+      final recommendations = scoredEvents.take(count).toList();
+
+      print('🎉 Našiel som ${recommendations.length} odporúčaní');
+
+      // Debug: Vypíš top 5
+      for (int i = 0; i < min(5, recommendations.length); i++) {
+        final r = recommendations[i];
+        String mainCat = CategoryMapper.getMainCategory(r.event.category);
+        print('  ${i+1}. ${r.event.title} [$mainCat] - ${(r.score * 100).toInt()}%');
+      }
+
+      return recommendations;
+
+    } catch (e, stackTrace) {
+      print('❌ Chyba pri získavaní odporúčaní: $e');
+      print('Stack trace: $stackTrace');
+      return [];
+    }
+  }
+}
