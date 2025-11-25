@@ -3,6 +3,7 @@ import '../services/app_services.dart';
 import '../models/recommendation_models.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // ← PRIDAJ
+import '../utils/category_mapper.dart'; // ← PRIDAJ pre filtrovanie kategórií
 
 class RecommendationsViewScreen extends StatefulWidget {
   final String userId;
@@ -286,10 +287,10 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
           else
             ...(
                 _userProfile.entries
+                    .where((entry) => CategoryMapper.isMainCategory(entry.key)) // ← Len hlavné kategórie
                     .toList()
                   ..sort((a, b) => b.value.compareTo(a.value))
             )
-                .take(5)
                 .map((entry) => Padding(
               padding: EdgeInsets.symmetric(vertical: 6),
               child: Column(
@@ -509,10 +510,18 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
 
           _buildScoreRow(
             'Kategória',
-            breakdown['category']!,
-            breakdown['category_match']!,
+            breakdown['main_category']!,
+            breakdown['main_category_match']!,
             Icons.category,
             Colors.purple,
+          ),
+          _buildScoreRow(
+
+            'Podkategória',  // 🔥 NOVÉ
+            breakdown['sub_category'] ?? 0,
+            breakdown['sub_category_match'] ?? 0,
+            Icons.category_outlined,
+            Colors.deepPurple,
           ),
           _buildScoreRow(
             'Vzdialenosť',

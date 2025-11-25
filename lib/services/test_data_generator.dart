@@ -113,16 +113,21 @@ class TestDataGenerator {
   categoryMap.values.expand((x) => x).toList();
 
   final List<String> eventTitles = [
-    'Beh po nábreží',
-    'Koncert v parku',
-    'Filmový večer',
-    'Stand-up comedy',
-    'Food festival',
-    'Výstava fotografie',
-    'Hackathon',
-    'Výlet do hôr',
-    'Workshop o AI',
-    'Startup meetup',
+    'udalost 1'
+        'udalost 2'
+        'udalost 3'
+        'udalost 4'
+        'udalost 5'
+        'udalost 6'
+        'udalost 7'
+        'udalost 8'
+        'udalost 9'
+        'udalost 10'
+        'udalost 11'
+        'udalost 12'
+        'udalost 13'
+        'udalost 14'
+        'udalost 15'
   ];
 
   // ============================================================
