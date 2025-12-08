@@ -7,12 +7,23 @@ import 'dart:math';
 class RecommendationEngine implements RecommendationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Váhy pre scoring
-  static const double MAIN_CATEGORY_WEIGHT = 0.4;  // 40% hlavná kategória
-  static const double SUB_CATEGORY_WEIGHT = 0.1;   // 10% podkategória
-  static const double DISTANCE_WEIGHT = 0.3;       // 30%
-  static const double RATING_WEIGHT = 0.1;         // 10%
-  static const double POPULARITY_WEIGHT = 0.1;     // 10%
+  // Váhy pre scoring - 🔥 ZMENENÉ z const na static aby sa dali meniť za runtime
+  static double MAIN_CATEGORY_WEIGHT = 0.3;
+  static double SUB_CATEGORY_WEIGHT = 0.3;
+  static double DISTANCE_WEIGHT = 0.2;
+  static double RATING_WEIGHT = 0.05;
+  static double POPULARITY_WEIGHT = 0.05;
+  static double FAVORITE_SUBCATEGORY_BONUS = 0.1;
+
+  // 🔥 NOVÁ metóda: Reset váh na default
+  static void resetWeights() {
+    MAIN_CATEGORY_WEIGHT = 0.3;
+    SUB_CATEGORY_WEIGHT = 0.3;
+    DISTANCE_WEIGHT = 0.2;
+    RATING_WEIGHT = 0.05;
+    POPULARITY_WEIGHT = 0.05;
+    FAVORITE_SUBCATEGORY_BONUS = 0.1;
+  }
 
   // ════════════════════════════════════════════════════════════
   // IMPLEMENTÁCIA: getUserProfile (s hlavnými + podkategóriami)
@@ -40,8 +51,10 @@ class RecommendationEngine implements RecommendationService {
       }
 
       // 3. Načítaj všetky navštívené eventy a mapuj kategórie
+      // 🔥 DÔLEŽITÉ: Obľúbené sa NEPOČÍTAJÚ do preferencií!
+      // Obľúbené sa používajú len pre bonus pri skórovaní.
       Map<String, int> mainCategoryCounts = {};
-      Map<String, int> subCategoryCounts = {};  // 🔥 NOVÉ
+      Map<String, int> subCategoryCounts = {};
       int totalEvents = 0;
 
       for (String eventId in user.visitedEventIds) {
@@ -59,7 +72,7 @@ class RecommendationEngine implements RecommendationService {
             mainCategoryCounts[mainCategory] =
                 (mainCategoryCounts[mainCategory] ?? 0) + 1;
 
-            // 🔥 NOVÉ: Podkategória (originálna)
+            // Podkategória (originálna)
             subCategoryCounts[event.category] =
                 (subCategoryCounts[event.category] ?? 0) + 1;
 
@@ -79,15 +92,23 @@ class RecommendationEngine implements RecommendationService {
           preferences[category] = count / totalEvents;
         });
 
-        // 🔥 NOVÉ: Podkategórie
+        // Podkategórie
         subCategoryCounts.forEach((subCategory, count) {
           preferences[subCategory] = count / totalEvents;
         });
       }
 
-      print('✅ Profil vypočítaný:');
+      print('✅ Profil vypočítaný (IBA z navštívených):');
+      print('   Navštívené eventy: ${user.visitedEventIds.length}');
+      print('   Obľúbené eventy: ${user.favoriteEventIds.length} (používajú sa len pre bonus)');
       print('   Hlavné kategórie: ${mainCategoryCounts.length}');
       print('   Podkategórie: ${subCategoryCounts.length}');
+      print('📊 CELÝ userProfile:');
+      preferences.forEach((key, value) {
+        print('   "$key": ${(value * 100).toStringAsFixed(1)}%');
+      });
+      print('   SÚČET: ${(preferences.values.fold(0.0, (a, b) => a + b) * 100).toStringAsFixed(1)}%');
+
 
       // Debug výpis hlavných kategórií
       mainCategoryCounts.forEach((cat, count) {
@@ -136,6 +157,7 @@ class RecommendationEngine implements RecommendationService {
     required Event event,
     required UserProfile user,
     required Map<String, double> userProfile,
+    required Set<String> favoriteSubCategories, // 🔥
   }) {
 
     // Už bol na tomto evente? Skip.
@@ -166,7 +188,7 @@ class RecommendationEngine implements RecommendationService {
     breakdown['sub_category_name'] = subCategory.hashCode.toDouble();
 
     // ────────────────────────────────────────────────────────
-    // 1️⃣ HLAVNÁ KATEGÓRIA (40% váha)
+    // 1️⃣ HLAVNÁ KATEGÓRIA
     // ────────────────────────────────────────────────────────
     double mainCategoryMatch = userProfile[mainCategory] ?? 0.0;
 
@@ -183,8 +205,7 @@ class RecommendationEngine implements RecommendationService {
     breakdown['main_category_match'] = mainCategoryMatch;
 
     // ────────────────────────────────────────────────────────
-    // 2️⃣ PODKATEGÓRIA (10% váha) - 🔥 NOVÉ
-    // ────────────────────────────────────────────────────────
+    // 2️⃣ PODKATEGÓRIA - ─────────────────
     double subCategoryMatch = userProfile[subCategory] ?? 0.0;
     double subCategoryScore = subCategoryMatch * SUB_CATEGORY_WEIGHT;
 
@@ -192,7 +213,7 @@ class RecommendationEngine implements RecommendationService {
     breakdown['sub_category_match'] = subCategoryMatch;
 
     // ────────────────────────────────────────────────────────
-    // 3️⃣ VZDIALENOSŤ (30% váha)
+    // 3️⃣ VZDIALENOSŤ
     // ────────────────────────────────────────────────────────
     double distance = _calculateDistance(user.location, event.location);
 
@@ -232,14 +253,24 @@ class RecommendationEngine implements RecommendationService {
     breakdown['attendees_count'] = event.attendees.length.toDouble();
 
     // ────────────────────────────────────────────────────────
-    // CELKOVÉ SKÓRE (40% + 10% + 30% + 10% + 10% = 100%)
+    // 6️⃣ BONUS: Event má rovnakú sub-kategóriu ako obľúbené 🔥 NOVÉ
+    // ────────────────────────────────────────────────────────
+    double favoriteBonus = 0.0;
+    if (favoriteSubCategories.contains(subCategory)) {
+      favoriteBonus = FAVORITE_SUBCATEGORY_BONUS;
+      breakdown['favorite_bonus'] = favoriteBonus;
+    }
+
+    // ────────────────────────────────────────────────────────
+    // CELKOVÉ SKÓRE (40% + 10% + 30% + 10% + 10% + bonus)
     // ────────────────────────────────────────────────────────
     double totalScore =
         mainCategoryScore +
             subCategoryScore +     // 🔥 NOVÉ
             distanceScore +
             ratingScore +
-            popularityScore;
+            popularityScore +
+            favoriteBonus;         // 🔥 NOVÉ
 
     print('🔍 DEBUG: ${event.title}');
     print('   Kategória: $subCategory → $mainCategory');
@@ -248,6 +279,9 @@ class RecommendationEngine implements RecommendationService {
     print('   userProfile[Sports]: ${userProfile["Sports"]}');
     print('   Vzdialenosť: ${breakdown["distance_km"]} km');
     print('   SKÓRE: $totalScore');
+    print('✅ Profil vypočítaný (IBA z navštívených):');
+
+
 
     return ScoredEvent(
       event: event,
@@ -283,9 +317,36 @@ class RecommendationEngine implements RecommendationService {
       print('👤 Užívateľ: ${user.name}');
       print('📍 Lokácia: ${user.location.latitude}, ${user.location.longitude}');
       print('📚 Navštívené eventy: ${user.visitedEventIds.length}');
+      print('⭐ Obľúbené eventy: ${user.favoriteEventIds.length}'); // 🔥 NOVÉ
+
+      // Debug výpis celého userProfile
+
 
       // ────────────────────────────────────────────────────────
-      // 2. Vypočítaj užívateľský profil (hlavné + podkategórie)
+      // 2. Načítaj sub-kategórie obľúbených eventov 🔥 NOVÉ
+      // ────────────────────────────────────────────────────────
+      Set<String> favoriteSubCategories = {};
+
+      for (String eventId in user.favoriteEventIds) {
+        try {
+          final eventDoc = await _firestore
+              .collection('events')
+              .doc(eventId)
+              .get();
+
+          if (eventDoc.exists) {
+            final event = Event.fromJson(eventDoc.data()!, eventId);
+            favoriteSubCategories.add(event.category);
+          }
+        } catch (e) {
+          print('⚠️ Chyba pri načítaní obľúbeného eventu $eventId: $e');
+        }
+      }
+
+      print('🎯 Obľúbené sub-kategórie: $favoriteSubCategories');
+
+      // ────────────────────────────────────────────────────────
+      // 3. Vypočítaj užívateľský profil (hlavné + podkategórie)
       // ────────────────────────────────────────────────────────
       final userProfile = await getUserProfile(userId);
 
@@ -311,6 +372,7 @@ class RecommendationEngine implements RecommendationService {
           event: event,
           user: user,
           userProfile: userProfile,
+          favoriteSubCategories: favoriteSubCategories, // 🔥 NOVÉ
         );
 
         // Pridaj len eventy s pozitívnym skóre
@@ -344,9 +406,16 @@ class RecommendationEngine implements RecommendationService {
         String mainCat = CategoryMapper.getMainCategory(r.event.category);
         double mainScore = (r.scoreBreakdown['main_category'] ?? 0) * 100;
         double subScore = (r.scoreBreakdown['sub_category'] ?? 0) * 100;
+        double favBonus = (r.scoreBreakdown['favorite_bonus'] ?? 0) * 100; // 🔥 NOVÉ
+
         print('  ${i+1}. ${r.event.title}');
         print('      [$mainCat/${r.event.category}]');
-        print('      Skóre: ${(r.score * 100).toInt()}% (hlavná: ${mainScore.toInt()}%, pod: ${subScore.toInt()}%)');
+
+        if (favBonus > 0) {
+          print('      Skóre: ${(r.score * 100).toInt()}% (hlavná: ${mainScore.toInt()}%, pod: ${subScore.toInt()}%, bonus: ${favBonus.toInt()}% ⭐)');
+        } else {
+          print('      Skóre: ${(r.score * 100).toInt()}% (hlavná: ${mainScore.toInt()}%, pod: ${subScore.toInt()}%)');
+        }
       }
 
       return recommendations;

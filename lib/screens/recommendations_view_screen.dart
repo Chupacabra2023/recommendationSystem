@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/app_services.dart';
 import '../models/recommendation_models.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // ← PRIDAJ
-import '../utils/category_mapper.dart'; // ← PRIDAJ pre filtrovanie kategórií
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/category_mapper.dart';
+import '../services/recommendation_engine.dart'; // 🔥 NOVÉ: Import váh
 
 class RecommendationsViewScreen extends StatefulWidget {
   final String userId;
@@ -97,7 +98,6 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
               '🎯 Odporúčania pre teba',
               style: TextStyle(fontSize: 18),
             ),
-            // ← NOVÉ: User ID pod názvom
             Text(
               _userName != null
                   ? '$_userName (${widget.userId})'
@@ -112,6 +112,14 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
         ),
         backgroundColor: Colors.deepPurple,
         elevation: 0,
+        actions: [
+          // 🔥 NOVÉ: Tlačidlo na nastavenie váh
+          IconButton(
+            icon: Icon(Icons.tune),
+            tooltip: 'Nastaviť váhy',
+            onPressed: () => _showWeightsDialog(),
+          ),
+        ],
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
@@ -171,8 +179,11 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
 
     return Column(
       children: [
-        // ← NOVÉ: Info banner s časom načítania
+        // Info banner s časom načítania
         _buildLoadTimeBanner(),
+
+        // 🔥 NOVÉ: Info banner s váhami
+        _buildWeightsBanner(),
 
         // Užívateľský profil
         _buildProfileCard(),
@@ -223,6 +234,62 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
               fontSize: 12,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // 🔥 NOVÁ metóda: Banner s váhami
+  Widget _buildWeightsBanner() {
+    // Zoznam aktívnych váh
+    List<String> activeWeights = [];
+
+    if (RecommendationEngine.MAIN_CATEGORY_WEIGHT > 0) {
+      activeWeights.add('Kategória ${(RecommendationEngine.MAIN_CATEGORY_WEIGHT * 100).toInt()}%');
+    }
+    if (RecommendationEngine.SUB_CATEGORY_WEIGHT > 0) {
+      activeWeights.add('Podkat. ${(RecommendationEngine.SUB_CATEGORY_WEIGHT * 100).toInt()}%');
+    }
+    if (RecommendationEngine.DISTANCE_WEIGHT > 0) {
+      activeWeights.add('Vzdialenosť ${(RecommendationEngine.DISTANCE_WEIGHT * 100).toInt()}%');
+    }
+    if (RecommendationEngine.RATING_WEIGHT > 0) {
+      activeWeights.add('Rating ${(RecommendationEngine.RATING_WEIGHT * 100).toInt()}%');
+    }
+    if (RecommendationEngine.POPULARITY_WEIGHT > 0) {
+      activeWeights.add('Popularita ${(RecommendationEngine.POPULARITY_WEIGHT * 100).toInt()}%');
+    }
+    if (RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS > 0) {
+      activeWeights.add('Bonus ⭐ ${(RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS * 100).toInt()}%');
+    }
+
+    if (activeWeights.isEmpty) {
+      activeWeights.add('Žiadne váhy nastavené');
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        border: Border(
+          bottom: BorderSide(color: Colors.blue.shade200, width: 1),
+        ),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          Icon(Icons.tune, size: 16, color: Colors.blue.shade700),
+          ...activeWeights.map((w) => Text(
+            w,
+            style: TextStyle(
+              color: Colors.blue.shade700,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          )).toList(),
         ],
       ),
     );
@@ -508,42 +575,62 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
           ),
           SizedBox(height: 12),
 
-          _buildScoreRow(
-            'Kategória',
-            breakdown['main_category']!,
-            breakdown['main_category_match']!,
-            Icons.category,
-            Colors.purple,
-          ),
-          _buildScoreRow(
+          // 🔥 DYNAMICKÉ ZOBRAZENIE: Použij váhy z RecommendationEngine
+          // Zobraz len komponenty ktoré majú nenulovú váhu
 
-            'Podkategória',  // 🔥 NOVÉ
-            breakdown['sub_category'] ?? 0,
-            breakdown['sub_category_match'] ?? 0,
-            Icons.category_outlined,
-            Colors.deepPurple,
-          ),
-          _buildScoreRow(
-            'Vzdialenosť',
-            breakdown['distance']!,
-            breakdown['distance']! / 0.3,
-            Icons.location_on,
-            Colors.blue,
-          ),
-          _buildScoreRow(
-            'Rating',
-            breakdown['rating']!,
-            breakdown['rating_value']! / 5.0,
-            Icons.star,
-            Colors.amber,
-          ),
-          _buildScoreRow(
-            'Popularita',
-            breakdown['popularity']!,
-            breakdown['attendees_count']! / 100,
-            Icons.people,
-            Colors.green,
-          ),
+          if (RecommendationEngine.MAIN_CATEGORY_WEIGHT > 0 && (breakdown['main_category'] ?? 0) > 0)
+            _buildScoreRow(
+              'Hlavná kategória',
+              breakdown['main_category']!,
+              breakdown['main_category_match'] ?? 0,
+              Icons.category,
+              Colors.purple,
+            ),
+
+          if (RecommendationEngine.SUB_CATEGORY_WEIGHT > 0 && (breakdown['sub_category'] ?? 0) > 0)
+            _buildScoreRow(
+              'Podkategória',
+              breakdown['sub_category']!,
+              breakdown['sub_category_match'] ?? 0,
+              Icons.category_outlined,
+              Colors.deepPurple,
+            ),
+
+          if (RecommendationEngine.DISTANCE_WEIGHT > 0 && (breakdown['distance'] ?? 0) > 0)
+            _buildScoreRow(
+              'Vzdialenosť',
+              breakdown['distance']!,
+              breakdown['distance']! / RecommendationEngine.DISTANCE_WEIGHT, // 🔥 Použij váhu
+              Icons.location_on,
+              Colors.blue,
+            ),
+
+          if (RecommendationEngine.RATING_WEIGHT > 0 && (breakdown['rating'] ?? 0) > 0)
+            _buildScoreRow(
+              'Rating',
+              breakdown['rating']!,
+              breakdown['rating_value']! / 5.0,
+              Icons.star,
+              Colors.amber,
+            ),
+
+          if (RecommendationEngine.POPULARITY_WEIGHT > 0 && (breakdown['popularity'] ?? 0) > 0)
+            _buildScoreRow(
+              'Popularita',
+              breakdown['popularity']!,
+              breakdown['attendees_count']! / 100,
+              Icons.people,
+              Colors.green,
+            ),
+
+          if (RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS > 0 && (breakdown['favorite_bonus'] ?? 0) > 0)
+            _buildScoreRow(
+              'Obľúbený bonus ⭐',
+              breakdown['favorite_bonus']!,
+              breakdown['favorite_bonus']! / RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS, // 🔥 Použij váhu
+              Icons.favorite,
+              Colors.pink,
+            ),
         ],
       ),
     );
@@ -587,6 +674,204 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // 🔥 NOVÁ metóda: Dialog na nastavenie váh
+  void _showWeightsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return _WeightsDialog(
+          onApply: () {
+            // Refresh odporúčania po zmene váh
+            _loadRecommendations();
+          },
+        );
+      },
+    );
+  }
+}
+
+// 🔥 NOVÝ StatefulWidget: Dialog s váhami
+class _WeightsDialog extends StatefulWidget {
+  final VoidCallback onApply;
+
+  const _WeightsDialog({required this.onApply});
+
+  @override
+  _WeightsDialogState createState() => _WeightsDialogState();
+}
+
+class _WeightsDialogState extends State<_WeightsDialog> {
+  late double mainCategoryWeight;
+  late double subCategoryWeight;
+  late double distanceWeight;
+  late double ratingWeight;
+  late double popularityWeight;
+  late double favoriteBonus;
+
+  @override
+  void initState() {
+    super.initState();
+    // Načítaj aktuálne váhy
+    mainCategoryWeight = RecommendationEngine.MAIN_CATEGORY_WEIGHT;
+    subCategoryWeight = RecommendationEngine.SUB_CATEGORY_WEIGHT;
+    distanceWeight = RecommendationEngine.DISTANCE_WEIGHT;
+    ratingWeight = RecommendationEngine.RATING_WEIGHT;
+    popularityWeight = RecommendationEngine.POPULARITY_WEIGHT;
+    favoriteBonus = RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS;
+  }
+
+  double get totalWeight =>
+      mainCategoryWeight +
+      subCategoryWeight +
+      distanceWeight +
+      ratingWeight +
+      popularityWeight +
+      favoriteBonus;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(Icons.tune, color: Colors.deepPurple),
+          SizedBox(width: 8),
+          Text('Nastavenie váh'),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Celková suma: ${(totalWeight * 100).toInt()}%',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: totalWeight > 1.0 ? Colors.red : Colors.green,
+              ),
+            ),
+            if (totalWeight > 1.0)
+              Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  '⚠️ Suma nesmie presiahnuť 100%',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+            SizedBox(height: 16),
+
+            _buildWeightSlider(
+              '📂 Hlavná kategória',
+              mainCategoryWeight,
+              (val) => setState(() => mainCategoryWeight = val),
+              Colors.purple,
+            ),
+            _buildWeightSlider(
+              '📁 Podkategória',
+              subCategoryWeight,
+              (val) => setState(() => subCategoryWeight = val),
+              Colors.deepPurple,
+            ),
+            _buildWeightSlider(
+              '📍 Vzdialenosť',
+              distanceWeight,
+              (val) => setState(() => distanceWeight = val),
+              Colors.blue,
+            ),
+            _buildWeightSlider(
+              '⭐ Rating',
+              ratingWeight,
+              (val) => setState(() => ratingWeight = val),
+              Colors.amber,
+            ),
+            _buildWeightSlider(
+              '👥 Popularita',
+              popularityWeight,
+              (val) => setState(() => popularityWeight = val),
+              Colors.green,
+            ),
+            _buildWeightSlider(
+              '💖 Obľúbený bonus',
+              favoriteBonus,
+              (val) => setState(() => favoriteBonus = val),
+              Colors.pink,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            // Reset na default
+            RecommendationEngine.resetWeights();
+            Navigator.pop(context);
+            widget.onApply();
+          },
+          child: Text('Reset'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Zrušiť'),
+        ),
+        ElevatedButton(
+          onPressed: totalWeight <= 1.0
+              ? () {
+                  // Aplikuj nové váhy
+                  RecommendationEngine.MAIN_CATEGORY_WEIGHT = mainCategoryWeight;
+                  RecommendationEngine.SUB_CATEGORY_WEIGHT = subCategoryWeight;
+                  RecommendationEngine.DISTANCE_WEIGHT = distanceWeight;
+                  RecommendationEngine.RATING_WEIGHT = ratingWeight;
+                  RecommendationEngine.POPULARITY_WEIGHT = popularityWeight;
+                  RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS = favoriteBonus;
+
+                  Navigator.pop(context);
+                  widget.onApply();
+                }
+              : null,
+          child: Text('Aplikovať'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeightSlider(
+    String label,
+    double value,
+    ValueChanged<double> onChanged,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            Text(
+              '${(value * 100).toInt()}%',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        Slider(
+          value: value,
+          min: 0.0,
+          max: 1.0,
+          divisions: 20,
+          activeColor: color,
+          onChanged: onChanged,
+        ),
+        SizedBox(height: 8),
+      ],
     );
   }
 }

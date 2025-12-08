@@ -57,6 +57,7 @@ class UserProfile {
   final GeoPoint location;
   final double maxDistanceKm;
   final List<String> visitedEventIds;
+  final List<String> favoriteEventIds; // 🔥 NOVÉ: Obľúbené eventy
 
   UserProfile({
     required this.id,
@@ -64,6 +65,7 @@ class UserProfile {
     required this.location,
     required this.maxDistanceKm,
     required this.visitedEventIds,
+    this.favoriteEventIds = const [], // Defaultne prázdny zoznam
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json, String id) {
@@ -73,6 +75,7 @@ class UserProfile {
       location: json['location'] ?? GeoPoint(0, 0),
       maxDistanceKm: (json['maxDistanceKm'] ?? 50).toDouble(),
       visitedEventIds: List<String>.from(json['visitedEventIds'] ?? []),
+      favoriteEventIds: List<String>.from(json['favoriteEventIds'] ?? []), // 🔥 NOVÉ
     );
   }
 
@@ -82,6 +85,7 @@ class UserProfile {
       'location': location,
       'maxDistanceKm': maxDistanceKm,
       'visitedEventIds': visitedEventIds,
+      'favoriteEventIds': favoriteEventIds, // 🔥 NOVÉ
     };
   }
 }

@@ -41,11 +41,14 @@ flutter analyze
 
 The recommendation engine (`lib/services/recommendation_engine.dart`) implements a weighted scoring system:
 
-- **Main Category Match** (40%): Matches events to user's preferred main categories
-- **Sub-Category Match** (10%): Provides finer-grained preference matching within main categories
-- **Distance** (30%): Prioritizes events closer to user location using Haversine formula
-- **Rating** (10%): Considers event ratings (new events get neutral 0.5 score)
-- **Popularity** (10%): Based on attendee count (normalized 0-100)
+- **Main Category Match** (30%): Matches events to user's preferred main categories
+- **Sub-Category Match** (30%): Provides finer-grained preference matching within main categories
+- **Distance** (20%): Prioritizes events closer to user location using Haversine formula
+- **Rating** (5%): Considers event ratings (new events get neutral 0.5 score)
+- **Popularity** (5%): Based on attendee count (normalized 0-100)
+- **Favorite Bonus** (10%): Extra weight for events matching sub-categories of favorited events
+
+**Note**: Scoring weights are configurable at runtime via static properties in `RecommendationEngine`. Use `RecommendationEngine.resetWeights()` to restore defaults.
 
 ### Category System
 
@@ -58,19 +61,21 @@ The `CategoryMapper` class handles mapping between subcategories and main catego
 ### User Profile Generation
 
 User preferences are calculated from visit history in `getUserProfile()`:
-1. Aggregates visited events
+1. Aggregates visited events (NOT favorites - they only provide a bonus)
 2. Maps subcategories to main categories
 3. Calculates preference percentages for both main and subcategories
 4. Returns weighted preference map
 
 New users without visit history receive an empty profile, causing all events to be scored equally (neutral scoring).
 
+**Important**: The `favoriteEventIds` field in `UserProfile` is NOT used to calculate preferences. It only provides a 10% bonus to events matching the same sub-categories as favorited events. This allows users to signal interest without it dominating their preference profile.
+
 ### Data Models
 
 Located in `lib/models/recommendation_models.dart`:
-- **Event**: Represents an event with category, location (GeoPoint), date, attendees, rating
-- **UserProfile**: User data including location, max distance preference, visited event IDs
-- **ScoredEvent**: Wrapper containing an event, its recommendation score, and score breakdown
+- **Event**: Represents an event with category, location (GeoPoint), date, attendees, rating, and `testDistanceKm` (for testing)
+- **UserProfile**: User data including location, max distance preference, `visitedEventIds` (used for preferences), and `favoriteEventIds` (used for bonus scoring)
+- **ScoredEvent**: Wrapper containing an event, its recommendation score, and detailed score breakdown by component
 
 ### Service Architecture
 
@@ -106,10 +111,12 @@ Events are excluded from recommendations if:
 - Event is beyond user's `maxDistanceKm` preference
 
 ### Scoring Details
-- Main category matches get high weight (40%) to strongly align with user interests
+- Main and sub-category matches now have equal weight (30% each) for balanced category matching
 - New events without ratings get neutral 0.5 rating score to avoid penalization
 - Empty user profiles (new users) get 0.5 main category match for all events
 - Unknown subcategories to user get 5% match score (exploration factor)
+- Events matching sub-categories of favorited events receive a 10% bonus
+- Visited events are automatically excluded from recommendations
 
 ## UI Structure
 

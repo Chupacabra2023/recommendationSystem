@@ -113,21 +113,21 @@ class TestDataGenerator {
   categoryMap.values.expand((x) => x).toList();
 
   final List<String> eventTitles = [
-    'udalost 1'
-        'udalost 2'
-        'udalost 3'
-        'udalost 4'
-        'udalost 5'
-        'udalost 6'
-        'udalost 7'
-        'udalost 8'
-        'udalost 9'
-        'udalost 10'
-        'udalost 11'
-        'udalost 12'
-        'udalost 13'
-        'udalost 14'
-        'udalost 15'
+    'udalost 1',
+        'udalost 2',
+        'udalost 3',
+        'udalost 4',
+        'udalost 5',
+        'udalost 6',
+        'udalost 7',
+        'udalost 8',
+        'udalost 9',
+        'udalost 10',
+        'udalost 11',
+        'udalost 12',
+        'udalost 13',
+        'udalost 14',
+        'udalost 15',
   ];
 
   // ============================================================
@@ -137,17 +137,36 @@ class TestDataGenerator {
   Future<void> generateTestUsers(int count) async {
     print('🔄 Generujem $count užívateľov...');
 
+    // 1. Najprv načítaj všetky existujúce test eventy
+    final eventsSnapshot = await _firestore
+        .collection('events')
+        .where(FieldPath.documentId, isGreaterThanOrEqualTo: 'test_event_')
+        .where(FieldPath.documentId, isLessThan: 'test_event_\uf8ff')
+        .get();
+
+    if (eventsSnapshot.docs.isEmpty) {
+      print('⚠️ Žiadne test eventy v databáze! Najprv spusti generateTestEvents()');
+      return;
+    }
+
+    final availableEventIds = eventsSnapshot.docs.map((doc) => doc.id).toList();
+    print('📦 Našiel som ${availableEventIds.length} existujúcich eventov');
+
     for (int i = 0; i < count; i++) {
       final userId = 'test_user_$i';
 
       final lat = bratislavaLat + (_random.nextDouble() - 0.5) * 0.2;
       final lng = bratislavaLng + (_random.nextDouble() - 0.5) * 0.2;
 
+      // 2. Vyber náhodné eventy pre návštevu (3-10)
       final visitedCount = 3 + _random.nextInt(8);
-      final visitedIds = List.generate(
-        visitedCount,
-            (j) => 'test_event_${_random.nextInt(30)}',
-      );
+      final shuffled = List<String>.from(availableEventIds)..shuffle(_random);
+      final visitedIds = shuffled.take(visitedCount.clamp(0, availableEventIds.length)).toList();
+
+      // 3. 🔥 OPRAVA: Obľúbené vyber IBA z navštívených (0-5)
+      final favoriteCount = _random.nextInt(6).clamp(0, visitedIds.length); // max 5 alebo počet visited
+      final shuffledVisited = List<String>.from(visitedIds)..shuffle(_random);
+      final favoriteIds = shuffledVisited.take(favoriteCount).toList();
 
       final user = UserProfile(
         id: userId,
@@ -155,9 +174,21 @@ class TestDataGenerator {
         location: GeoPoint(lat, lng),
         maxDistanceKm: 50,
         visitedEventIds: visitedIds,
+        favoriteEventIds: favoriteIds,
       );
 
       await _firestore.collection('users').doc(userId).set(user.toJson());
+
+      // 4. 🔥 OPRAVA: Pridaj používateľa do attendees každého navštíveného eventu
+      for (String eventId in visitedIds) {
+        try {
+          await _firestore.collection('events').doc(eventId).update({
+            'attendees': FieldValue.arrayUnion([userId])
+          });
+        } catch (e) {
+          print('⚠️ Chyba pri pridávaní užívateľa do eventu $eventId: $e');
+        }
+      }
 
       if ((i + 1) % 10 == 0) {
         print('👤 Vytvorených ${i + 1}/$count užívateľov');
@@ -165,6 +196,8 @@ class TestDataGenerator {
     }
 
     print('✅ Hotovo! Vytvorených $count užívateľov');
+    print('   (každý má 3-10 navštívených eventov a 0-5 obľúbených z navštívených)');
+    print('   (používatelia boli pridaní do attendees eventov)');
   }
 
   // ============================================================
@@ -185,11 +218,8 @@ class TestDataGenerator {
       final daysAhead = 1 + _random.nextInt(30);
       final date = DateTime.now().add(Duration(days: daysAhead));
 
-      final attendeeCount = _random.nextInt(51);
-      final attendees = List.generate(
-        attendeeCount,
-            (j) => 'test_user_${_random.nextInt(100)}',
-      );
+      // 🔥 OPRAVA: Attendees sa budú pridávať cez generateTestUsers()
+      final attendees = <String>[];
 
       final rating = 3.0 + _random.nextDouble() * 2.0;
       final totalRatings = _random.nextInt(20) + 1;
@@ -214,6 +244,7 @@ class TestDataGenerator {
     }
 
     print('✅ Hotovo! Vytvorených $count udalostí');
+    print('   (attendees sa pridajú pri generovaní užívateľov)');
   }
 
   // ============================================================
