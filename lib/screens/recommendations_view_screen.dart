@@ -5,6 +5,13 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/category_mapper.dart';
 import '../services/recommendation_engine.dart'; // 🔥 NOVÉ: Import váh
+import 'dart:io'; // 🔥 Pre prácu so súbormi
+import 'package:path_provider/path_provider.dart'; // 🔥 Pre získanie cesty
+import 'package:share_plus/share_plus.dart'; // 🔥 Pre zdieľanie súboru
+import 'package:flutter/foundation.dart' show kIsWeb; // 🔥 Pre detekciu web platformy
+import '../utils/web_download.dart' as web_download; // 🔥 Web download utility
+
+
 
 class RecommendationsViewScreen extends StatefulWidget {
   final String userId;
@@ -87,6 +94,313 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
     }
   }
 
+  // 🔥 NOVÁ metóda: Export výsledkov do textového súboru
+  Future<void> _exportResults() async {
+    try {
+      if (_recommendations.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Žiadne výsledky na export"))
+        );
+        return;
+      }
+
+      // 🔥 Načítaj používateľa
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = await firestore.collection('users').doc(widget.userId).get();
+
+      List<String> visitedIds = [];
+      List<String> favoriteIds = [];
+
+      List<String> visitedTitles = [];
+      List<String> favoriteTitles = [];
+
+      if (userDoc.exists) {
+        visitedIds = List<String>.from(userDoc['visitedEventIds'] ?? []);
+        favoriteIds = List<String>.from(userDoc['favoriteEventIds'] ?? []);
+      }
+
+// 🔥 Načítaj názvy eventov
+      Future<List<String>> loadTitles(List<String> ids) async {
+        List<String> titles = [];
+        for (String id in ids) {
+          final doc = await firestore.collection('events').doc(id).get();
+          if (doc.exists) {
+            final data = doc.data()!;
+            final title = data['title'] ?? 'Unknown';
+            final category = data['category'] ?? 'Unknown';
+            final mainCat = CategoryMapper.getMainCategory(category);
+
+            titles.add("$title ($mainCat / $category)");
+          }
+        }
+        return titles;
+      }
+
+      visitedTitles = await loadTitles(visitedIds);
+      favoriteTitles = await loadTitles(favoriteIds);
+
+      final topEvents = _recommendations.take(5).toList();
+
+      // 🔥 Vytvor textový export
+      StringBuffer buffer = StringBuffer();
+
+      buffer.writeln("========= EXPORT ODPORÚČANÍ =========\n");
+      buffer.writeln("📅 Dátum: ${DateTime.now()}");
+      buffer.writeln("👤 Užívateľ: ${_userName ?? widget.userId}");
+      buffer.writeln("TOP 5 eventov:\n");
+
+      for (int i = 0; i < topEvents.length; i++) {
+        final scored = topEvents[i];
+        final e = scored.event;
+        final b = scored.scoreBreakdown;
+
+        buffer.writeln("--------------------------------------------------");
+        buffer.writeln("#${i + 1}  ${e.title}");
+        buffer.writeln("Celkové skóre: ${(scored.score * 100).toStringAsFixed(1)}%");
+        buffer.writeln("Kategória: ${CategoryMapper.getMainCategory(e.category)} / ${e.category}");
+        buffer.writeln("Vzdialenosť: ${b['distance_km']?.toStringAsFixed(2)} km");
+        buffer.writeln("Rating: ${e.rating.toStringAsFixed(1)} z 5 (${e.totalRatings} hodnotení)");
+        buffer.writeln("Účastníci: ${e.attendees.length}/${e.maxAttendees}" +
+          (e.attendees.length >= e.maxAttendees ? " - PLNÉ ❌" : ""));
+
+        buffer.writeln("\n--- BREAKDOWN ---");
+        buffer.writeln("Hlavná kategória: ${(b['main_category']! * 100).toStringAsFixed(1)}%  (zhoda ${(b['main_category_match']! * 100).toStringAsFixed(1)}%)");
+        buffer.writeln("Podkategória: ${(b['sub_category']! * 100).toStringAsFixed(1)}%  (zhoda ${(b['sub_category_match']! * 100).toStringAsFixed(1)}%)");
+        buffer.writeln("Vzdialenosť: ${(b['distance']! * 100).toStringAsFixed(1)}%");
+        buffer.writeln("Rating: ${(b['rating']! * 100).toStringAsFixed(1)}%");
+        buffer.writeln("Popularita: ${(b['popularity']! * 100).toStringAsFixed(1)}%");
+
+        if (b['favorite_bonus'] != null && b['favorite_bonus']! > 0) {
+          buffer.writeln("Obľúbený bonus: ${(b['favorite_bonus']! * 100).toStringAsFixed(1)}%");
+        }
+
+        buffer.writeln("");
+      }
+
+      // 🔥 Pridaj váhy
+      buffer.writeln("========= NASTAVENIE VÁH =========\n");
+      buffer.writeln("Hlavná kategória: ${(RecommendationEngine.MAIN_CATEGORY_WEIGHT * 100).toStringAsFixed(2)}%");
+      buffer.writeln("Podkategória: ${(RecommendationEngine.SUB_CATEGORY_WEIGHT * 100).toStringAsFixed(2)}%");
+      buffer.writeln("Vzdialenosť: ${(RecommendationEngine.DISTANCE_WEIGHT * 100).toStringAsFixed(2)}%");
+      buffer.writeln("Rating: ${(RecommendationEngine.RATING_WEIGHT * 100).toStringAsFixed(2)}%");
+      buffer.writeln("Popularita: ${(RecommendationEngine.POPULARITY_WEIGHT * 100).toStringAsFixed(2)}%");
+      buffer.writeln("Obľúbený bonus: ${(RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS * 100).toStringAsFixed(2)}%");
+
+
+      buffer.writeln("========= PROFIL UŽÍVATEĽA =========\n");
+      buffer.writeln("ID: ${widget.userId}");
+      buffer.writeln("Meno: ${_userName ?? 'Unknown'}\n");
+
+      buffer.writeln("Navštívené eventy (${visitedTitles.length}):");
+      if (visitedTitles.isEmpty) {
+        buffer.writeln("  - Žiadne");
+      } else {
+        for (var title in visitedTitles) {
+          buffer.writeln("  - $title");
+        }
+      }
+      buffer.writeln("");
+
+      buffer.writeln("Obľúbené eventy (${favoriteTitles.length}):");
+      if (favoriteTitles.isEmpty) {
+        buffer.writeln("  - Žiadne");
+      } else {
+        for (var title in favoriteTitles) {
+          buffer.writeln("  - $title");
+        }
+      }
+      buffer.writeln("\n=====================================\n");
+
+      final text = buffer.toString();
+
+      //════════════════════════════════════════════════════
+      //  WEB EXPORT – stiahne súbor v prehliadači
+      //════════════════════════════════════════════════════
+      if (kIsWeb) {
+        web_download.downloadFile(text, "recommendations_export.txt");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("📄 Súbor bol stiahnutý"))
+        );
+        return;
+      }
+
+      //════════════════════════════════════════════════════
+      //  MOBIL / DESKTOP EXPORT
+      //════════════════════════════════════════════════════
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File("${dir.path}/recommendations_export.txt");
+      await file.writeAsString(text);
+
+      await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: "Export odporúčaní",
+          text: "Tu sú tvoje odporúčania"
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("📄 Súbor uložený a pripravený na zdieľanie"))
+      );
+    }
+    catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Chyba pri exporte: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
+
+
+
+
+ /* Future<void> _exportResults() async {
+    if (_recommendations.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Žiadne výsledky na export'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Vezmi top 5 eventov
+      final topEvents = _recommendations.take(5).toList();
+
+      // Vytvor textový obsah
+      StringBuffer buffer = StringBuffer();
+
+      // Header
+      buffer.writeln('═══════════════════════════════════════════════════════');
+      buffer.writeln('        EXPORT ODPORÚČANÍ - RECOMMENDATION SYSTEM');
+      buffer.writeln('═══════════════════════════════════════════════════════');
+      buffer.writeln();
+      buffer.writeln('📅 Dátum exportu: ${DateFormat('d. MMMM yyyy, HH:mm').format(DateTime.now())}');
+      buffer.writeln('👤 Užívateľ: ${_userName ?? widget.userId}');
+      buffer.writeln('🎯 Počet odporúčaní: ${_recommendations.length}');
+      buffer.writeln();
+
+      // Aktuálne nastavenie váh
+      buffer.writeln('─────────────────────────────────────────────────────');
+      buffer.writeln('⚙️  AKTUÁLNE NASTAVENIE VÁH');
+      buffer.writeln('─────────────────────────────────────────────────────');
+      buffer.writeln('📂 Hlavná kategória:     ${(RecommendationEngine.MAIN_CATEGORY_WEIGHT * 100).toStringAsFixed(1)}%');
+      buffer.writeln('📁 Podkategória:         ${(RecommendationEngine.SUB_CATEGORY_WEIGHT * 100).toStringAsFixed(1)}%');
+      buffer.writeln('📍 Vzdialenosť:          ${(RecommendationEngine.DISTANCE_WEIGHT * 100).toStringAsFixed(1)}%');
+      buffer.writeln('⭐ Rating:               ${(RecommendationEngine.RATING_WEIGHT * 100).toStringAsFixed(1)}%');
+      buffer.writeln('👥 Popularita:           ${(RecommendationEngine.POPULARITY_WEIGHT * 100).toStringAsFixed(1)}%');
+      buffer.writeln('💖 Obľúbený bonus:       ${(RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS * 100).toStringAsFixed(1)}%');
+      buffer.writeln();
+
+      // Top 5 eventov
+      buffer.writeln('═══════════════════════════════════════════════════════');
+      buffer.writeln('        🏆 TOP 5 ODPORÚČANÝCH EVENTOV');
+      buffer.writeln('═══════════════════════════════════════════════════════');
+      buffer.writeln();
+
+      for (int i = 0; i < topEvents.length; i++) {
+        final scored = topEvents[i];
+        final event = scored.event;
+        final breakdown = scored.scoreBreakdown;
+        final mainCategory = CategoryMapper.getMainCategory(event.category);
+
+        buffer.writeln('┌─────────────────────────────────────────────────────┐');
+        buffer.writeln('│ #${i + 1}. ${event.title}');
+        buffer.writeln('├─────────────────────────────────────────────────────┤');
+        buffer.writeln('│ 📊 CELKOVÉ SKÓRE: ${(scored.score * 100).toStringAsFixed(1)}%');
+        buffer.writeln('│');
+        buffer.writeln('│ 📋 ZÁKLADNÉ INFORMÁCIE:');
+        buffer.writeln('│   • Kategória: $mainCategory / ${event.category}');
+        buffer.writeln('│   • Dátum: ${DateFormat('d. MMM yyyy, HH:mm').format(event.date)}');
+        buffer.writeln('│   • Vzdialenosť: ${breakdown['distance_km']?.toStringAsFixed(1)} km');
+        buffer.writeln('│   • Rating: ${event.rating.toStringAsFixed(1)}/5.0 (${event.totalRatings} hodnotení)');
+        buffer.writeln('│   • Účastníci: ${event.attendees.length}');
+        buffer.writeln('│');
+        buffer.writeln('│ 🔍 BREAKDOWN SKÓRE:');
+
+        if (breakdown['main_category'] != null && breakdown['main_category']! > 0) {
+          final matchPercent = (breakdown['main_category_match']! * 100).toStringAsFixed(1);
+          final scorePercent = (breakdown['main_category']! * 100).toStringAsFixed(1);
+          buffer.writeln('│   📂 Hlavná kategória:  $scorePercent% (zhoda: $matchPercent%)');
+        }
+
+        if (breakdown['sub_category'] != null && breakdown['sub_category']! > 0) {
+          final matchPercent = (breakdown['sub_category_match']! * 100).toStringAsFixed(1);
+          final scorePercent = (breakdown['sub_category']! * 100).toStringAsFixed(1);
+          buffer.writeln('│   📁 Podkategória:      $scorePercent% (zhoda: $matchPercent%)');
+        }
+
+        if (breakdown['distance'] != null && breakdown['distance']! > 0) {
+          final scorePercent = (breakdown['distance']! * 100).toStringAsFixed(1);
+          final distanceKm = breakdown['distance_km']?.toStringAsFixed(1) ?? '?';
+          buffer.writeln('│   📍 Vzdialenosť:       $scorePercent% ($distanceKm km)');
+        }
+
+        if (breakdown['rating'] != null && breakdown['rating']! > 0) {
+          final scorePercent = (breakdown['rating']! * 100).toStringAsFixed(1);
+          final ratingValue = breakdown['rating_value']?.toStringAsFixed(1) ?? '?';
+          buffer.writeln('│   ⭐ Rating:            $scorePercent% ($ratingValue/5.0)');
+        }
+
+        if (breakdown['popularity'] != null && breakdown['popularity']! > 0) {
+          final scorePercent = (breakdown['popularity']! * 100).toStringAsFixed(1);
+          final attendees = breakdown['attendees_count']?.toInt() ?? 0;
+          buffer.writeln('│   👥 Popularita:        $scorePercent% ($attendees účastníkov)');
+        }
+
+        if (breakdown['favorite_bonus'] != null && breakdown['favorite_bonus']! > 0) {
+          final scorePercent = (breakdown['favorite_bonus']! * 100).toStringAsFixed(1);
+          buffer.writeln('│   💖 Obľúbený bonus:    $scorePercent% ⭐');
+        }
+
+        buffer.writeln('└─────────────────────────────────────────────────────┘');
+        buffer.writeln();
+      }
+
+      // Footer
+      buffer.writeln('═══════════════════════════════════════════════════════');
+      buffer.writeln('Vygenerované aplikáciou Event Recommendation System');
+      buffer.writeln('═══════════════════════════════════════════════════════');
+
+      // Ulož do súboru
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+      final fileName = 'recommendations_export_$timestamp.txt';
+      final file = File('${directory.path}/$fileName');
+
+      await file.writeAsString(buffer.toString());
+
+      // Zdieľaj súbor
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Export odporúčaní - $timestamp',
+        text: 'Top 5 odporúčaných eventov pre ${_userName ?? widget.userId}',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Výsledky exportované do $fileName'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Chyba pri exporte: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,7 +427,13 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
         backgroundColor: Colors.deepPurple,
         elevation: 0,
         actions: [
-          // 🔥 NOVÉ: Tlačidlo na nastavenie váh
+          // 🔥 Tlačidlo na export výsledkov
+          IconButton(
+            icon: Icon(Icons.file_download),
+            tooltip: 'Exportovať výsledky',
+            onPressed: _exportResults,
+          ),
+          // 🔥 Tlačidlo na nastavenie váh
           IconButton(
             icon: Icon(Icons.tune),
             tooltip: 'Nastaviť váhy',
@@ -509,6 +829,14 @@ class _RecommendationsViewScreenState extends State<RecommendationsViewScreen> {
                 '${event.rating.toStringAsFixed(1)} (${event.totalRatings})',
                 Colors.amber,
               ),
+              SizedBox(height: 4),
+              // 🔥 Zobrazenie počtu účastníkov a FULL status
+              _buildInfoRow(
+                Icons.people,
+                '${event.attendees.length}/${event.maxAttendees} účastníkov' +
+                  (event.attendees.length >= event.maxAttendees ? ' - PLNÉ ❌' : ''),
+                event.attendees.length >= event.maxAttendees ? Colors.red : Colors.green,
+              ),
               SizedBox(height: 8),
 
               ClipRRect(
@@ -731,6 +1059,148 @@ class _WeightsDialogState extends State<_WeightsDialog> {
       popularityWeight +
       favoriteBonus;
 
+  // 🔥 NOVÁ metóda: Prerozdelí váhy proporčne keď používateľ zmení jednu váhu
+  void _adjustWeight(String weightName, double newValue) {
+    // Clamp new value to valid range
+    newValue = newValue.clamp(0.0, 1.0);
+
+    // Získaj starú hodnotu
+    double oldValue = _getWeight(weightName);
+
+    // Vypočítaj delta (koľko sa zmenilo)
+    double delta = newValue - oldValue;
+
+    // Ak je delta 0, nič nerob
+    if (delta.abs() < 0.001) return;
+
+    // Získaj zoznam ostatných váh
+    List<String> otherWeights = ['main', 'sub', 'distance', 'rating', 'popularity', 'favorite']
+      ..remove(weightName);
+
+    // Vypočítaj súčet ostatných váh
+    double sumOfOthers = 0;
+    for (var name in otherWeights) {
+      sumOfOthers += _getWeight(name);
+    }
+
+    // Ak sú všetky ostatné váhy 0, rovnomerne rozdeľ
+    if (sumOfOthers < 0.001) {
+      double remaining = 1.0 - newValue;
+      double perWeight = remaining / otherWeights.length;
+
+      setState(() {
+        _setWeight(weightName, newValue);
+        for (var name in otherWeights) {
+          _setWeight(name, perWeight);
+        }
+      });
+      return;
+    }
+
+    // 🔥 Proporčne prerozdelí delta medzi ostatné váhy
+    // Každá váha dostane podiel úmerný jej súčasnej hodnote
+    Map<String, double> newWeights = {};
+    double remainingToDistribute = -delta; // Koľko treba rozdeliť medzi ostatné
+
+    // Prvý priechod: proporčne rozdeľ
+    for (var name in otherWeights) {
+      double currentWeight = _getWeight(name);
+      double proportion = currentWeight / sumOfOthers;
+      double adjustment = remainingToDistribute * proportion;
+      double newWeight = currentWeight + adjustment;
+      newWeights[name] = newWeight;
+    }
+
+    // Druhý priechod: oprav záporné hodnoty
+    bool hasNegative = true;
+    int maxIterations = 10;
+    int iteration = 0;
+
+    while (hasNegative && iteration < maxIterations) {
+      hasNegative = false;
+      double excessToRedistribute = 0;
+      List<String> positiveWeights = [];
+
+      // Nájdi záporné váhy a pozitívne váhy
+      for (var name in otherWeights) {
+        if (newWeights[name]! < 0) {
+          excessToRedistribute += newWeights[name]!.abs();
+          newWeights[name] = 0;
+          hasNegative = true;
+        } else if (newWeights[name]! > 0) {
+          positiveWeights.add(name);
+        }
+      }
+
+      // Prerozdelí prebytok medzi pozitívne váhy
+      if (hasNegative && positiveWeights.isNotEmpty) {
+        double sumPositive = 0;
+        for (var name in positiveWeights) {
+          sumPositive += newWeights[name]!;
+        }
+
+        if (sumPositive > 0) {
+          for (var name in positiveWeights) {
+            double proportion = newWeights[name]! / sumPositive;
+            newWeights[name] = newWeights[name]! - (excessToRedistribute * proportion);
+          }
+        }
+      }
+
+      iteration++;
+    }
+
+    // Aplikuj zmeny
+    setState(() {
+      _setWeight(weightName, newValue);
+      newWeights.forEach((name, value) {
+        _setWeight(name, value.clamp(0.0, 1.0));
+      });
+    });
+  }
+
+  double _getWeight(String name) {
+    switch (name) {
+      case 'main':
+        return mainCategoryWeight;
+      case 'sub':
+        return subCategoryWeight;
+      case 'distance':
+        return distanceWeight;
+      case 'rating':
+        return ratingWeight;
+      case 'popularity':
+        return popularityWeight;
+      case 'favorite':
+        return favoriteBonus;
+      default:
+        return 0;
+    }
+  }
+
+  void _setWeight(String name, double value) {
+    switch (name) {
+      case 'main':
+        mainCategoryWeight = value;
+        break;
+      case 'sub':
+        subCategoryWeight = value;
+        break;
+      case 'distance':
+        distanceWeight = value;
+        break;
+      case 'rating':
+        ratingWeight = value;
+        break;
+      case 'popularity':
+        popularityWeight = value;
+        break;
+      case 'favorite':
+        favoriteBonus = value;
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -745,58 +1215,75 @@ class _WeightsDialogState extends State<_WeightsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Celková suma: ${(totalWeight * 100).toInt()}%',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: totalWeight > 1.0 ? Colors.red : Colors.green,
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Celková suma: ${(totalWeight * 100).toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (totalWeight > 1.0)
-              Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  '⚠️ Suma nesmie presiahnuť 100%',
-                  style: TextStyle(color: Colors.red, fontSize: 12),
-                ),
+            SizedBox(height: 8),
+            Text(
+              'Slidery sú prepojené - úprava jednej váhy automaticky prerozdelí ostatné',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
               ),
+            ),
             SizedBox(height: 16),
 
             _buildWeightSlider(
               '📂 Hlavná kategória',
               mainCategoryWeight,
-              (val) => setState(() => mainCategoryWeight = val),
+              (val) => _adjustWeight('main', val),
               Colors.purple,
             ),
             _buildWeightSlider(
               '📁 Podkategória',
               subCategoryWeight,
-              (val) => setState(() => subCategoryWeight = val),
+              (val) => _adjustWeight('sub', val),
               Colors.deepPurple,
             ),
             _buildWeightSlider(
               '📍 Vzdialenosť',
               distanceWeight,
-              (val) => setState(() => distanceWeight = val),
+              (val) => _adjustWeight('distance', val),
               Colors.blue,
             ),
             _buildWeightSlider(
               '⭐ Rating',
               ratingWeight,
-              (val) => setState(() => ratingWeight = val),
+              (val) => _adjustWeight('rating', val),
               Colors.amber,
             ),
             _buildWeightSlider(
               '👥 Popularita',
               popularityWeight,
-              (val) => setState(() => popularityWeight = val),
+              (val) => _adjustWeight('popularity', val),
               Colors.green,
             ),
             _buildWeightSlider(
               '💖 Obľúbený bonus',
               favoriteBonus,
-              (val) => setState(() => favoriteBonus = val),
+              (val) => _adjustWeight('favorite', val),
               Colors.pink,
             ),
           ],
@@ -817,20 +1304,18 @@ class _WeightsDialogState extends State<_WeightsDialog> {
           child: Text('Zrušiť'),
         ),
         ElevatedButton(
-          onPressed: totalWeight <= 1.0
-              ? () {
-                  // Aplikuj nové váhy
-                  RecommendationEngine.MAIN_CATEGORY_WEIGHT = mainCategoryWeight;
-                  RecommendationEngine.SUB_CATEGORY_WEIGHT = subCategoryWeight;
-                  RecommendationEngine.DISTANCE_WEIGHT = distanceWeight;
-                  RecommendationEngine.RATING_WEIGHT = ratingWeight;
-                  RecommendationEngine.POPULARITY_WEIGHT = popularityWeight;
-                  RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS = favoriteBonus;
+          onPressed: () {
+            // Aplikuj nové váhy
+            RecommendationEngine.MAIN_CATEGORY_WEIGHT = mainCategoryWeight;
+            RecommendationEngine.SUB_CATEGORY_WEIGHT = subCategoryWeight;
+            RecommendationEngine.DISTANCE_WEIGHT = distanceWeight;
+            RecommendationEngine.RATING_WEIGHT = ratingWeight;
+            RecommendationEngine.POPULARITY_WEIGHT = popularityWeight;
+            RecommendationEngine.FAVORITE_SUBCATEGORY_BONUS = favoriteBonus;
 
-                  Navigator.pop(context);
-                  widget.onApply();
-                }
-              : null,
+            Navigator.pop(context);
+            widget.onApply();
+          },
           child: Text('Aplikovať'),
         ),
       ],

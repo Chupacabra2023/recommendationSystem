@@ -39,16 +39,16 @@ flutter analyze
 
 ### Core Recommendation Algorithm
 
-The recommendation engine (`lib/services/recommendation_engine.dart`) implements a weighted scoring system:
+The recommendation engine (`lib/services/recommendation_engine.dart`) implements a weighted scoring system with **default weights** optimized for category matching:
 
-- **Main Category Match** (30%): Matches events to user's preferred main categories
-- **Sub-Category Match** (30%): Provides finer-grained preference matching within main categories
-- **Distance** (20%): Prioritizes events closer to user location using Haversine formula
-- **Rating** (5%): Considers event ratings (new events get neutral 0.5 score)
-- **Popularity** (5%): Based on attendee count (normalized 0-100)
-- **Favorite Bonus** (10%): Extra weight for events matching sub-categories of favorited events
+- **Main Category Match** (20%): Matches events to user's preferred main categories - highest weight for broad preference matching
+- **Sub-Category Match** (16%): Provides finer-grained preference matching within main categories
+- **Distance** (16%): Prioritizes events closer to user location using Haversine formula
+- **Rating** (16%): Considers event ratings (new events get neutral 0.5 score)
+- **Popularity** (16%): Based on attendee count (normalized 0-100)
+- **Favorite Bonus** (16%): Extra weight for events matching sub-categories of favorited events
 
-**Note**: Scoring weights are configurable at runtime via static properties in `RecommendationEngine`. Use `RecommendationEngine.resetWeights()` to restore defaults.
+**Interactive Weight Adjustment**: Users can adjust weights via the UI (tune icon in RecommendationsViewScreen). The weights are **interconnected** - when one weight increases, others decrease proportionally to maintain a 100% total. Use `RecommendationEngine.resetWeights()` to restore default weights (Main: 20%, Others: 16%).
 
 ### Category System
 
@@ -73,7 +73,7 @@ New users without visit history receive an empty profile, causing all events to 
 ### Data Models
 
 Located in `lib/models/recommendation_models.dart`:
-- **Event**: Represents an event with category, location (GeoPoint), date, attendees, rating, and `testDistanceKm` (for testing)
+- **Event**: Represents an event with category, location (GeoPoint), date, attendees, rating, `maxAttendees` (capacity limit), and `testDistanceKm` (for testing). Events display as "FULL" when `attendees.length >= maxAttendees`.
 - **UserProfile**: User data including location, max distance preference, `visitedEventIds` (used for preferences), and `favoriteEventIds` (used for bonus scoring)
 - **ScoredEvent**: Wrapper containing an event, its recommendation score, and detailed score breakdown by component
 
@@ -96,7 +96,7 @@ Firebase is initialized in `main.dart` before app launch. The app uses:
 
 `lib/services/test_data_generator.dart` provides utilities for creating test data:
 - `generateTestUsers(count)`: Creates test users centered around Bratislava coordinates
-- `generateTestEvents(count)`: Creates test events with random categories, dates, and ratings
+- `generateTestEvents(count)`: Creates test events with random categories, dates, ratings, and `maxAttendees` (4-100 participants)
 - `clearTestData()`: Removes all test users and events (prefixed with "test_")
 
 ## Key Implementation Details
@@ -111,17 +111,32 @@ Events are excluded from recommendations if:
 - Event is beyond user's `maxDistanceKm` preference
 
 ### Scoring Details
-- Main and sub-category matches now have equal weight (30% each) for balanced category matching
+- Default weights: Main Category 20%, all others 16% each. Users can adjust weights interactively via UI
+- When adjusting weights in UI, all components remain interconnected - total always equals 100%
 - New events without ratings get neutral 0.5 rating score to avoid penalization
 - Empty user profiles (new users) get 0.5 main category match for all events
 - Unknown subcategories to user get 5% match score (exploration factor)
-- Events matching sub-categories of favorited events receive a 10% bonus
+- Events matching sub-categories of favorited events receive bonus based on favorite weight
 - Visited events are automatically excluded from recommendations
 
 ## UI Structure
 
 - **RecommendationTestScreen** (`lib/screens/recommendation_test_screen.dart`): Testing interface for generating test data and viewing recommendations
 - **RecommendationsViewScreen** (`lib/screens/recommendations_view_screen.dart`): Displays personalized recommendations for a user
+  - **Weight Adjustment Dialog**: Users can tune scoring weights interactively (tune icon)
+  - **Export Results**: Exports top 5 recommendations to a text file with full breakdown (download icon)
+
+## Export Functionality
+
+The app includes an export feature (`_exportResults()` in RecommendationsViewScreen) that:
+- Generates a formatted text file with top 5 recommended events
+- Includes current weight configuration
+- Shows detailed score breakdown for each event (category match, distance, rating, popularity, favorite bonus)
+- Displays both percentage scores and actual values (e.g., distance in km, rating value)
+- Uses `share_plus` package to allow sharing the exported file via system share dialog
+- Files are saved to app's documents directory with timestamp: `recommendations_export_YYYY-MM-DD_HH-mm-ss.txt`
+
+**Example Output**: See `example_export.txt` in the project root for a sample of the exported format.
 
 ## Firebase Configuration
 
@@ -131,4 +146,5 @@ The project requires `google-services.json` in `android/app/` for Firebase integ
 
 - The codebase uses Slovak language for UI strings and comments
 - Test data is centered around Bratislava, Slovakia (coordinates: 48.1486, 17.1077)
-- The recommendation algorithm emphasizes category matching (50% total weight across main + sub) over other factors
+- The recommendation algorithm uses equal weights (16.67% each) by default, but these can be adjusted by users through the UI
+- Weight adjustments are interconnected - increasing one weight automatically decreases others proportionally

@@ -1,0 +1,8 @@
+PWD c:\Users\marma\StudioProjects\recomended_system\LaTeX
+INPUT C:\Users\marma\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
+INPUT c:\Users\marma\StudioProjects\recomended_system\LaTeX\GrafyRecomandationSystemu.tex
+OUTPUT GrafyRecomandationSystemu.log
+INPUT C:\Users\marma\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx10.tfm
+INPUT C:\Users\marma\AppData\Local\Programs\MiKTeX\fonts\tfm\jknappen\ec\tcrm1000.tfm
+OUTPUT GrafyRecomandationSystemu.pdf
+INPUT C:\Users\marma\AppData\Local\MiKTeX\fonts\map\pdftex\pdftex.map

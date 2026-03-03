@@ -7,22 +7,22 @@ import 'dart:math';
 class RecommendationEngine implements RecommendationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Váhy pre scoring - 🔥 ZMENENÉ z const na static aby sa dali meniť za runtime
-  static double MAIN_CATEGORY_WEIGHT = 0.3;
-  static double SUB_CATEGORY_WEIGHT = 0.3;
-  static double DISTANCE_WEIGHT = 0.2;
-  static double RATING_WEIGHT = 0.05;
-  static double POPULARITY_WEIGHT = 0.05;
-  static double FAVORITE_SUBCATEGORY_BONUS = 0.1;
+  // Váhy pre scoring - 🔥 Hlavná kategória 20%, ostatné 16%
+  static double MAIN_CATEGORY_WEIGHT = 0.20;
+  static double SUB_CATEGORY_WEIGHT = 0.16;
+  static double DISTANCE_WEIGHT = 0.16;
+  static double RATING_WEIGHT = 0.16;
+  static double POPULARITY_WEIGHT = 0.16;
+  static double FAVORITE_SUBCATEGORY_BONUS = 0.16;
 
-  // 🔥 NOVÁ metóda: Reset váh na default
+  // 🔥 Reset váh na default (hlavná kategória 20%, ostatné 16%)
   static void resetWeights() {
-    MAIN_CATEGORY_WEIGHT = 0.3;
-    SUB_CATEGORY_WEIGHT = 0.3;
-    DISTANCE_WEIGHT = 0.2;
-    RATING_WEIGHT = 0.05;
-    POPULARITY_WEIGHT = 0.05;
-    FAVORITE_SUBCATEGORY_BONUS = 0.1;
+    MAIN_CATEGORY_WEIGHT = 0.20;
+    SUB_CATEGORY_WEIGHT = 0.16;
+    DISTANCE_WEIGHT = 0.16;
+    RATING_WEIGHT = 0.16;
+    POPULARITY_WEIGHT = 0.16;
+    FAVORITE_SUBCATEGORY_BONUS = 0.16;
   }
 
   // ════════════════════════════════════════════════════════════
@@ -178,6 +178,15 @@ class RecommendationEngine implements RecommendationService {
       );
     }
 
+    // Event je plný? Skip.
+    if (event.attendees.length >= event.maxAttendees) {
+      return ScoredEvent(
+        event: event,
+        score: -1,
+        scoreBreakdown: {'event_full': -1},
+      );
+    }
+
     Map<String, double> breakdown = {};
 
     // Konvertuj podkategóriu eventu na hlavnú
@@ -246,7 +255,8 @@ class RecommendationEngine implements RecommendationService {
     // 5️⃣ POPULARITA (10% váha)
     // ────────────────────────────────────────────────────────
     // Normalizácia: 0-100 účastníkov → 0.0-1.0
-    double popularityScore = min(event.attendees.length / 100, 1.0);
+    // Potrebujete mať v Event modeli aj maxCapacity
+    double popularityScore = min(event.attendees.length / event.maxAttendees, 1.0);
     popularityScore = popularityScore * POPULARITY_WEIGHT;
 
     breakdown['popularity'] = popularityScore;
@@ -364,6 +374,10 @@ class RecommendationEngine implements RecommendationService {
       // 4. Skóruj každý event
       // ────────────────────────────────────────────────────────
       List<ScoredEvent> scoredEvents = [];
+      int visitedCount = 0;
+      int pastCount = 0;
+      int fullCount = 0;
+      int tooFarCount = 0;
 
       for (var doc in eventsSnapshot.docs) {
         final event = Event.fromJson(doc.data(), doc.id);
@@ -375,18 +389,31 @@ class RecommendationEngine implements RecommendationService {
           favoriteSubCategories: favoriteSubCategories, // 🔥 NOVÉ
         );
 
-        // Pridaj len eventy s pozitívnym skóre
-        if (scored.score > 0) {
+        // Počítaj dôvody filtrovania
+        if (scored.scoreBreakdown.containsKey('already_visited')) {
+          visitedCount++;
+        } else if (scored.scoreBreakdown.containsKey('past_event')) {
+          pastCount++;
+        } else if (scored.scoreBreakdown.containsKey('event_full')) {
+          fullCount++;
+        } else if (scored.score > 0) {
           // Filter: Max vzdialenosť
           double distance = scored.scoreBreakdown['distance_km'] ?? 999;
 
           if (distance <= maxDistanceKm) {
             scoredEvents.add(scored);
+          } else {
+            tooFarCount++;
           }
         }
       }
 
       print('✅ Skórovaných ${scoredEvents.length} eventov');
+      print('🚫 Vyfiltrované:');
+      print('   • Už navštívené: $visitedCount');
+      print('   • Minulé: $pastCount');
+      print('   • Plné (bez voľných miest): $fullCount');
+      print('   • Príliš ďaleko: $tooFarCount');
 
       // ────────────────────────────────────────────────────────
       // 5. Zoradi od najvyššieho skóre

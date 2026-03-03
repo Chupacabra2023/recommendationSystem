@@ -79,7 +79,7 @@ class _RecommendationTestScreenState extends State<RecommendationTestScreen> {
               onPressed: _isLoading ? null : () {
                 _runAction(
                   'Generujem 100 užívateľov...',
-                      () => _generator.generateTestUsers(100),
+                      () => _generator.generateTestUsers(200),
                 );
               },
               icon: Icon(Icons.people),
@@ -96,7 +96,7 @@ class _RecommendationTestScreenState extends State<RecommendationTestScreen> {
               onPressed: _isLoading ? null : () {
                 _runAction(
                   'Generujem 50 udalostí...',
-                      () => _generator.generateTestEvents(50),
+                      () => _generator.generateTestEvents(200),
                 );
               },
               icon: Icon(Icons.event),

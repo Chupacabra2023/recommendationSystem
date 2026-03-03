@@ -1,0 +1,130 @@
+═══════════════════════════════════════════════════════
+        EXPORT ODPORÚČANÍ - RECOMMENDATION SYSTEM
+═══════════════════════════════════════════════════════
+
+📅 Dátum exportu: 8. December 2025, 14:30
+👤 Užívateľ: test_user_1
+🎯 Počet odporúčaní: 15
+
+─────────────────────────────────────────────────────
+⚙️  AKTUÁLNE NASTAVENIE VÁH
+─────────────────────────────────────────────────────
+📂 Hlavná kategória:     16.7%
+📁 Podkategória:         16.7%
+📍 Vzdialenosť:          16.7%
+⭐ Rating:               16.7%
+👥 Popularita:           16.7%
+💖 Obľúbený bonus:       16.7%
+
+═══════════════════════════════════════════════════════
+        🏆 TOP 5 ODPORÚČANÝCH EVENTOV
+═══════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────┐
+│ #1. test_event_Football Match
+├─────────────────────────────────────────────────────┤
+│ 📊 CELKOVÉ SKÓRE: 78.5%
+│
+│ 📋 ZÁKLADNÉ INFORMÁCIE:
+│   • Kategória: Sports / Ball sports
+│   • Dátum: 15. Dec 2025, 18:00
+│   • Vzdialenosť: 2.3 km
+│   • Rating: 4.5/5.0 (42 hodnotení)
+│   • Účastníci: 35
+│
+│ 🔍 BREAKDOWN SKÓRE:
+│   📂 Hlavná kategória:  15.2% (zhoda: 91.0%)
+│   📁 Podkategória:      14.8% (zhoda: 88.5%)
+│   📍 Vzdialenosť:       16.1% (2.3 km)
+│   ⭐ Rating:            15.0% (4.5/5.0)
+│   👥 Popularita:        5.9% (35 účastníkov)
+│   💖 Obľúbený bonus:    11.5% ⭐
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ #2. test_event_Jazz Concert
+├─────────────────────────────────────────────────────┤
+│ 📊 CELKOVÉ SKÓRE: 72.3%
+│
+│ 📋 ZÁKLADNÉ INFORMÁCIE:
+│   • Kategória: Music & Entertainment / Koncert
+│   • Dátum: 20. Dec 2025, 20:00
+│   • Vzdialenosť: 5.1 km
+│   • Rating: 4.8/5.0 (156 hodnotení)
+│   • Účastníci: 89
+│
+│ 🔍 BREAKDOWN SKÓRE:
+│   📂 Hlavná kategória:  13.5% (zhoda: 81.0%)
+│   📁 Podkategória:      12.9% (zhoda: 77.2%)
+│   📍 Vzdialenosť:       14.2% (5.1 km)
+│   ⭐ Rating:            16.0% (4.8/5.0)
+│   👥 Popularita:        14.9% (89 účastníkov)
+│   💖 Obľúbený bonus:    0.8%
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ #3. test_event_Art Exhibition
+├─────────────────────────────────────────────────────┤
+│ 📊 CELKOVÉ SKÓRE: 68.9%
+│
+│ 📋 ZÁKLADNÉ INFORMÁCIE:
+│   • Kategória: Art & Culture / Výstava
+│   • Dátum: 18. Dec 2025, 10:00
+│   • Vzdialenosť: 3.7 km
+│   • Rating: 4.2/5.0 (28 hodnotení)
+│   • Účastníci: 12
+│
+│ 🔍 BREAKDOWN SKÓRE:
+│   📂 Hlavná kategória:  14.8% (zhoda: 88.5%)
+│   📁 Podkategória:      13.2% (zhoda: 79.0%)
+│   📍 Vzdialenosť:       15.5% (3.7 km)
+│   ⭐ Rating:            14.0% (4.2/5.0)
+│   👥 Popularita:        2.0% (12 účastníkov)
+│   💖 Obľúbený bonus:    9.4%
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ #4. test_event_Food Festival
+├─────────────────────────────────────────────────────┤
+│ 📊 CELKOVÉ SKÓRE: 65.2%
+│
+│ 📋 ZÁKLADNÉ INFORMÁCIE:
+│   • Kategória: Food & Drinks / Food festival
+│   • Dátum: 22. Dec 2025, 12:00
+│   • Vzdialenosť: 8.2 km
+│   • Rating: 4.6/5.0 (203 hodnotení)
+│   • Účastníci: 142
+│
+│ 🔍 BREAKDOWN SKÓRE:
+│   📂 Hlavná kategória:  10.5% (zhoda: 63.0%)
+│   📁 Podkategória:      9.8% (zhoda: 58.5%)
+│   📍 Vzdialenosť:       11.8% (8.2 km)
+│   ⭐ Rating:            15.3% (4.6/5.0)
+│   👥 Popularita:        16.7% (142 účastníkov)
+│   💖 Obľúbený bonus:    1.1%
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│ #5. test_event_Tech Meetup
+├─────────────────────────────────────────────────────┤
+│ 📊 CELKOVÉ SKÓRE: 61.8%
+│
+│ 📋 ZÁKLADNÉ INFORMÁCIE:
+│   • Kategória: Business & Tech / Networking event
+│   • Dátum: 19. Dec 2025, 17:30
+│   • Vzdialenosť: 4.5 km
+│   • Rating: 4.3/5.0 (67 hodnotení)
+│   • Účastníci: 48
+│
+│ 🔍 BREAKDOWN SKÓRE:
+│   📂 Hlavná kategória:  12.3% (zhoda: 73.5%)
+│   📁 Podkategória:      11.5% (zhoda: 68.8%)
+│   📍 Vzdialenosť:       14.8% (4.5 km)
+│   ⭐ Rating:            14.3% (4.3/5.0)
+│   👥 Popularita:        8.0% (48 účastníkov)
+│   💖 Obľúbený bonus:    0.9%
+└─────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════
+Vygenerované aplikáciou Event Recommendation System
+═══════════════════════════════════════════════════════

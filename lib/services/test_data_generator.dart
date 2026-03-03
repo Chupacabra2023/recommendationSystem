@@ -152,6 +152,10 @@ class TestDataGenerator {
     final availableEventIds = eventsSnapshot.docs.map((doc) => doc.id).toList();
     print('📦 Našiel som ${availableEventIds.length} existujúcich eventov');
 
+    int totalAttempts = 0;
+    int successfulAdds = 0;
+    int capacityReached = 0;
+
     for (int i = 0; i < count; i++) {
       final userId = 'test_user_$i';
 
@@ -180,11 +184,27 @@ class TestDataGenerator {
       await _firestore.collection('users').doc(userId).set(user.toJson());
 
       // 4. 🔥 OPRAVA: Pridaj používateľa do attendees každého navštíveného eventu
+      // ⚠️ KONTROLA KAPACITY: pridaj len ak nie je event plný
       for (String eventId in visitedIds) {
+        totalAttempts++;
         try {
-          await _firestore.collection('events').doc(eventId).update({
-            'attendees': FieldValue.arrayUnion([userId])
-          });
+          // Načítaj aktuálny stav eventu
+          final eventDoc = await _firestore.collection('events').doc(eventId).get();
+          if (eventDoc.exists) {
+            final eventData = eventDoc.data()!;
+            final currentAttendees = (eventData['attendees'] as List<dynamic>?) ?? [];
+            final maxAttendees = eventData['maxAttendees'] as int? ?? 100;
+
+            // Pridaj len ak je voľné miesto
+            if (currentAttendees.length < maxAttendees) {
+              await _firestore.collection('events').doc(eventId).update({
+                'attendees': FieldValue.arrayUnion([userId])
+              });
+              successfulAdds++;
+            } else {
+              capacityReached++;
+            }
+          }
         } catch (e) {
           print('⚠️ Chyba pri pridávaní užívateľa do eventu $eventId: $e');
         }
@@ -197,7 +217,14 @@ class TestDataGenerator {
 
     print('✅ Hotovo! Vytvorených $count užívateľov');
     print('   (každý má 3-10 navštívených eventov a 0-5 obľúbených z navštívených)');
-    print('   (používatelia boli pridaní do attendees eventov)');
+    print('📊 Štatistika kapacity eventov:');
+    print('   • Pokusov o pridanie: $totalAttempts');
+    print('   • Úspešne pridaných: $successfulAdds');
+    print('   • Odmietnutých (plná kapacita): $capacityReached');
+    if (totalAttempts > 0) {
+      final successRate = (successfulAdds / totalAttempts * 100).toStringAsFixed(1);
+      print('   • Úspešnosť: $successRate%');
+    }
   }
 
   // ============================================================
@@ -224,6 +251,9 @@ class TestDataGenerator {
       final rating = 3.0 + _random.nextDouble() * 2.0;
       final totalRatings = _random.nextInt(20) + 1;
 
+      // 🔥 Random maxAttendees od 4 do 100
+      final maxAttendees = 4 + _random.nextInt(97); // 4 až 100
+
       final event = Event(
         id: eventId,
         title: '${eventTitles[i % eventTitles.length]} #$i',
@@ -234,6 +264,7 @@ class TestDataGenerator {
         rating: rating,
         totalRatings: totalRatings,
         testDistanceKm: _random.nextInt(60) + 1,
+        maxAttendees: maxAttendees, // 🔥 Random od 4 do 100
       );
 
       await _firestore.collection('events').doc(eventId).set(event.toJson());

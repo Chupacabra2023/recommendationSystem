@@ -10,6 +10,7 @@ class Event {
   final double rating;
   final int totalRatings;
   final double testDistanceKm; // 🔥 používané pri testoch
+  final int maxAttendees; // 🔥 Maximálny počet účastníkov
 
   Event({
     required this.id,
@@ -21,6 +22,7 @@ class Event {
     this.rating = 0.0,
     this.totalRatings = 0,
     this.testDistanceKm = 0.0,
+    this.maxAttendees = 100, // Default: 100 účastníkov
   });
 
   factory Event.fromJson(Map<String, dynamic> json, String id) {
@@ -34,6 +36,7 @@ class Event {
       rating: (json['rating'] ?? 0.0).toDouble(),
       totalRatings: json['totalRatings'] ?? 0,
       testDistanceKm: (json['testDistanceKm'] ?? 0).toDouble(), // 🔥 doplnené
+      maxAttendees: json['maxAttendees'] ?? 100, // 🔥 doplnené
     );
   }
 
@@ -47,6 +50,7 @@ class Event {
       'rating': rating,
       'totalRatings': totalRatings,
       'testDistanceKm': testDistanceKm, // 🔥 uložiť do Firestore
+      'maxAttendees': maxAttendees, // 🔥 uložiť do Firestore
     };
   }
 }

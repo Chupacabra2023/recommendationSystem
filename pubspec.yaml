@@ -36,6 +36,8 @@ dependencies:
 
   # Pridaj toto:
   intl: ^0.19.0  # ← Pre formátovanie dátumov
+  path_provider: ^2.1.1  # ← Pre získanie cesty k súborom
+  share_plus: ^7.2.1  # ← Pre zdieľanie súborov
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
