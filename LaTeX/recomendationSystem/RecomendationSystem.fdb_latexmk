@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1772540348.13616 "c:/Users/marma/StudioProjects/recomended_system/LaTeX/RecomendationSystem.tex" "RecomendationSystem.pdf" "RecomendationSystem" 1772540354.13068 0
+["pdflatex"] 1773053490.34856 "c:/Users/marma/StudioProjects/recomended_system/LaTeX/recomendationSystem/RecomendationSystem.tex" "RecomendationSystem.pdf" "RecomendationSystem" 1773053495.78092 0
   "C:/Users/marma/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1772472583 80909 eab91d9745dd2edfd62a31d53cd5fe15 ""
   "C:/Users/marma/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/tcrm1200.pk" 1772470219 14064 462eea8b90a73d648938e1f3a3549d9a ""
   "C:/Users/marma/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1772469485 13333486 d1a946fdeda25b67d81485f1fceeac1d ""
@@ -196,10 +196,10 @@
   "C:/Users/marma/AppData/Local/Programs/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "C:/Users/marma/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1729265222 55384 b454dec21c2d9f45ec0b793f0995b992 ""
   "GrafyRecomandationSystemu.tex" 1772494901 52482 d7601e68ded9d7b2b0e4eeb358aa9a29 ""
-  "RecomendationSystem.aux" 1772540353 15725 56cce555f72ed93a062cf314b2a7b7dd "pdflatex"
-  "RecomendationSystem.out" 1772540353 6014 720d69900536960e78be697fead97f0f "pdflatex"
-  "RecomendationSystem.tex" 1772540341 12598 d7fc4ea90fc08a4bc69ca831c577fd10 ""
-  "c:/Users/marma/StudioProjects/recomended_system/LaTeX/RecomendationSystem.tex" 1772540341 12598 d7fc4ea90fc08a4bc69ca831c577fd10 ""
+  "RecomendationSystem.aux" 1773053495 16291 ce0e0976c288155547155d81c125f39c "pdflatex"
+  "RecomendationSystem.out" 1773053495 6463 8afff4a4c7f44d45feb41860b8972623 "pdflatex"
+  "RecomendationSystem.tex" 1772622165 14324 49af74c37e04e6bb89cf3856c61e30e7 ""
+  "c:/Users/marma/StudioProjects/recomended_system/LaTeX/recomendationSystem/RecomendationSystem.tex" 1772622165 14324 49af74c37e04e6bb89cf3856c61e30e7 ""
   (generated)
   "RecomendationSystem.aux"
   "RecomendationSystem.log"

@@ -1,0 +1,333 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[slovak]{babel}
+\usepackage{graphicx}
+\usepackage{pgf-pie}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\geometry{margin=2.5cm}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{float}
+
+\title{Analýza odporúčacieho systému pre eventy}
+\author{Marma}
+\date{\today}
+
+\begin{document}
+
+\section{Testovanie výsledkov}
+
+\subsection{Metodológia a testovacie dáta}
+
+Testovanie sme rozdelili na dve časti:
+\begin{enumerate}
+    \item \textbf{Analýza vplyvu váh:} Sledovanie zmien odporúčaní pri systematickej
+    zmene váhového vektora pre jedného používateľa a overenie citlivosti systému
+    na jednotlivé faktory.
+    \item \textbf{Overenie funkčnosti predpovede:} Overenie, či systém správne
+    predpovedá relevantné udalosti na základe histórie používateľa, a nájdenie
+    optimálnej konfigurácie váh pomocou metriky Precision@5.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Časť 1 - Analýza vplyvu váh}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Cieľ}
+
+Cieľom tejto časti bolo pochopiť, ako jednotlivé faktory váhového vektora reálne
+ovplyvňujú výsledné skóre odporúčaní, a identifikovať ktoré faktory sú pre
+personalizáciu skutočne relevantné.
+
+\subsection{Testovací používateľ}
+
+Na účely testovania používame náhodného syntetického používateľa, ktorého budeme
+nazývať Janko. Janko navštívil celkovo 8 udalostí. Ich rozdelenie podľa hlavných
+kategórií je spracované v tabuľke~\ref{tab:rozdelenie_kat}.
+
+\begin{table}[H]
+\centering
+\caption{Rozdelenie návštev podľa kategórií}
+\label{tab:rozdelenie_kat}
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Kategória} & \textbf{Počet návštev} \\ \hline
+Sports           & 4 \\
+Education        & 3 \\
+Business \& Tech & 1 \\ \hline
+\textbf{Spolu}   & \textbf{8} \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Navštívené udalosti a ich kategorizácia}
+\label{tab:konkretne_eventy}
+\small
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Podkategória}    & \textbf{Kategória} \\ \hline
+Pitch Night              & Business \& Tech \\
+Workshop (ručné práce)   & Education \\
+Osobný rozvoj            & Education \\
+Strength \& Conditioning & Sports \\
+Team sports              & Sports \\
+Winter sports            & Sports \\
+Osobný rozvoj            & Education \\
+Recreational sports      & Sports \\ \hline
+\end{tabular}
+\end{table}
+
+Okrem histórie navštívených podujatí systém berie do úvahy aj udalosti označené
+ako obľúbené. Tieto majú vyššiu váhu vďaka faktoru $B_{fav}$. Janko označil ako
+obľúbenú udalosť v podkategórii \textit{Strength \& Conditioning} (Sports).
+
+\subsection{Vizuálna analýza profilu}
+
+Na obrázku~\ref{fig:porovnanie_grafov} vidíme, že zatiaľ čo na úrovni hlavných
+kategórií dominuje šport (50\,\%), na úrovni podkategórií sú záujmy veľmi
+diverzifikované - každá podkategória má zastúpenie len 12,5–25\,\%.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.48\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.7]
+        \tikzset{every node/.style={font=\scriptsize}}
+        \pie[text=legend, radius=1.8,
+             color={blue!60, green!60, orange!60}]{
+            50/Sports,
+            37.5/Education,
+            12.5/Business \& Tech
+        }
+    \end{tikzpicture}
+    \caption{Hlavné kategórie}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.7]
+        \tikzset{every node/.style={font=\scriptsize}}
+        \pie[text=legend, radius=1.8,
+             color={cyan!60, yellow!60, red!60, gray!60, violet!60, brown!60, green!60}]{
+            25/Osobný rozvoj,
+            12.5/Pitch Night,
+            12.5/Workshop,
+            12.5/Strength \& Cond.,
+            12.5/Team sports,
+            12.5/Winter sports,
+            12.5/Recreational sports
+        }
+    \end{tikzpicture}
+    \caption{Podkategórie}
+\end{minipage}
+\caption{Preferencie používateľa Janka na úrovni kategórií a podkategórií}
+\label{fig:porovnanie_grafov}
+\end{figure}
+
+\subsection{Výsledky testovania váh}
+
+Pre výpočet finálneho skóre používame vážený súčet faktorov
+(vzťah~\ref{eq:score_formula}):
+
+\begin{equation}
+Score = w_1 \cdot C_{main} + w_2 \cdot C_{sub} + w_3 \cdot D + w_4 \cdot R + w_5 \cdot P + w_6 \cdot B_{fav}
+\label{eq:score_formula}
+\end{equation}
+
+Definovali sme sedem testovacích scenárov so systematickou zmenou váh $w_1$
+až $w_6$. Každý test obsahuje konfiguráciu váh, prehľad TOP~5 odporúčaní a rozbor
+príspevkov jednotlivých faktorov k výslednému skóre (detailné výstupy sú
+v Prílohe~XY1).
+
+\subsubsection{Výsledky pri rovnomernom rozdelení váh}
+
+Pri rovnomernom rozdelení ($w_i \approx 16.67\,\%$) dominujú v odporúčaniach
+udalosti s vysokým ratingom a obľúbené udalosti. Dôvodom sú vlastnosti
+normalizovaných vstupov:
+
+\begin{itemize}
+    \item \textbf{Obľúbený bonus:} Binárna hodnota (0 alebo 1) - automaticky
+    posúva obľúbené udalosti o celú váhovú kategóriu vyššie.
+    \item \textbf{Rating:} Väčšina podujatí má hodnotenie blízke 5 hviezdičkám,
+    takže $R \approx 1.0$ - vytvára konštantný silný tlak na skóre.
+    \item \textbf{Popularita:} Rastie pri napĺňaní kapacity; plne obsadené
+    podujatia systém vyraďuje.
+    \item \textbf{Vzdialenosť:} Stredne silný vplyv závislý od hustoty podujatí
+    v okolí.
+    \item \textbf{Hlavná kategória:} Kvôli diverzifikovanej histórii je $C_{main}$
+    nízke. Pri rovnomernej váhe ho prekrývajú faktory s prirodzene vyššími hodnotami.
+    \item \textbf{Podkategória:} Ešte nižší vplyv ako hlavná kategória -
+    $C_{sub}$ je rozptýlené naprieč mnohými podkategóriami, takže pri rovnomernej
+    váhe prakticky nevplýva na výsledné poradie.
+\end{itemize}
+
+Záver: čím viac chceme personalizovať podľa histórie, tým agresívnejšie musíme
+zvyšovať váhy kategórií.
+
+\subsubsection{Porovnanie vplyvu faktorov pri dominantnej váhe 60\,\%}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{|l|c|p{8cm}|}
+\hline
+\textbf{Faktor} & \textbf{Reálny vplyv*} & \textbf{Zdôvodnenie} \\
+\hline
+Obľúbený bonus   & 76\,\% & Binárny charakter (0/1) - najprudšie zmeny v poradí. \\
+\hline
+Rating           & 74\,\% & $R \approx 0.95$ - takmer fixný prírastok ku skóre. \\
+\hline
+Vzdialenosť      & 64\,\% & Vysoký rozptyl medzi blízkymi (0.85) a vzdialenými (0.35). \\
+\hline
+Hlavná kategória & 41\,\% & $C_{main} = 0.44$ pre šport (4/8 eventov). Závisí od histórie. \\
+\hline
+Podkategória     & 30\,\% & $C_{sub} = 0.11$ (1/8 eventov v každej podkategórii). Nízky
+vplyv kvôli rozptýlenej histórii. \\
+\hline
+Popularita       & 31\,\% & Najslabší faktor - nízka obsadenosť v testovacej sade. \\
+\hline
+\end{tabular}
+\caption{Vplyv faktorov pri 60\,\% konfigurácii (*priemerný podiel na skóre TOP~5)}
+\label{tab:vplyv_faktorov}
+\end{table}
+
+\subsubsection{Zhodnotenie faktora podkategórie}
+
+Podkategória má najnižší reálny vplyv, jej zachovanie v algoritme má však
+strategický význam:
+\begin{itemize}
+    \item \textbf{Implicitné učenie:} Systém zachytí zmenu záujmov skôr, než si
+    používateľ manuálne upraví profil.
+    \item \textbf{Jemnosť odporúčaní:} Zabraňuje tomu, aby systém odporúčal všetky
+    športové udalosti, keď používateľ preferuje konkrétne len jogu.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Časť 2 - Overenie funkčnosti predpovede}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Cieľ}
+
+Táto časť má dva ciele. Prvým je overiť, či systém vôbec dokáže správne predpovedať
+relevantné udalosti na základe histórie - teda či základná funkčnosť funguje.
+Druhým cieľom je nájsť optimálnu konfiguráciu váh pre hlavnú kategóriu a podkategóriu,
+keďže z Časti~1 vyplynulo, že práve tieto dva faktory sú relevantné pre
+personalizáciu.
+
+\subsection{Overenie základnej funkčnosti}
+
+Overovali sme, či systém správne predpovedá udalosti zodpovedajúce dominantnej
+kategórii používateľa. Vytvorili sme 5~profilov s jasne definovanou dominantnou
+kategóriou:
+
+\begin{itemize}
+    \item \textbf{Sporťák} - 6$\times$ Sports, 1$\times$ Art \& Culture, 1$\times$ Food \& Drinks
+    \item \textbf{Hudobník} - 5$\times$ Music \& Entertainment, 1$\times$ Sports
+    \item \textbf{Umelec} - 4$\times$ Art \& Culture, 1$\times$ Music \& Entertainment
+    \item \textbf{Technik} - 3$\times$ Business \& Tech, 1$\times$ Education
+    \item \textbf{Foodie} - 4$\times$ Food \& Drinks, 1$\times$ Community \& Social
+\end{itemize}
+
+Predpoveď je úspešná (\textit{PASS}), ak aspoň 3~z TOP~5 odporúčaní patria do
+dominantnej kategórie používateľa. Pre každý profil sme spustili algoritmus
+s 10~konfiguráciami váh, kde sme menili pomer hlavná kategória / podkategória
+od 100\,\%/0\,\% po 0\,\%/100\,\%:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Konfigurácia} & \textbf{Hlavná kategória} & \textbf{Podkategória} \\
+\hline
+W01 & 100\,\% & 0\,\%   \\
+W02 & 90\,\%  & 10\,\%  \\
+W03 & 80\,\%  & 20\,\%  \\
+W04 & 70\,\%  & 30\,\%  \\
+W05 & 60\,\%  & 40\,\%  \\
+W06 & 50\,\%  & 50\,\%  \\
+W07 & 40\,\%  & 60\,\%  \\
+W08 & 30\,\%  & 70\,\%  \\
+W09 & 20\,\%  & 80\,\%  \\
+W10 & 0\,\%   & 100\,\% \\
+\hline
+\end{tabular}
+\caption{Konfigurácie váh pre overenie základnej funkčnosti}
+\label{tab:w_configs}
+\end{table}
+
+Systém úspešne prešiel všetkými konfiguráciami pre všetkých 5~profilov - vo
+všetkých prípadoch dokázal na základe histórie správne predpovedať relevantné
+udalosti. Tento výsledok potvrdzuje, že content-based filtrovanie efektívne
+extrahuje preferencie z histórie a aplikuje ich pri generovaní odporúčaní.
+
+\subsection{Testovanie citlivosti predpovede}
+
+Po potvrdení základnej funkčnosti sme hľadali optimálnu konfiguráciu pomeru
+hlavná kategória / podkategória. Testovanie prebehlo na 50~syntetických
+používateľoch s počtom navštívených udalostí od 1 do 50 a datasete 150~náhodných
+udalostí. Pre každého používateľa sme získali referenčný TOP~5 na základe plnej
+histórie, následne sme skrývali každý navštívený event a sledovali, či sa TOP~5
+zmenil. Zmena TOP~5 po skrytí eventu je pozitívny signál - systém reaguje na
+aktuálnu históriu a prispôsobuje odporúčania.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Konfigurácia} & \textbf{Hlavná kat.} & \textbf{Podkategória} & \textbf{AVG citlivosť} \\
+\hline
+T01 & 100\,\% & 0\,\%   & 14\,\% \\
+T02 & 90\,\%  & 10\,\%  & 35\,\% \\
+T03 & 80\,\%  & 20\,\%  & 35\,\% \\
+T04 & 70\,\%  & 30\,\%  & 36\,\% \\
+T05 & 60\,\%  & 40\,\%  & 36\,\% \\
+T06 & 50\,\%  & 50\,\%  & 40\,\% \\
+T07 & 40\,\%  & 60\,\%  & 35\,\% \\
+T08 & 30\,\%  & 70\,\%  & 35\,\% \\
+T09 & 20\,\%  & 80\,\%  & 34\,\% \\
+T10 & 0\,\%   & 100\,\% & 34\,\% \\
+\hline
+\end{tabular}
+\caption{Výsledky testovania citlivosti - podiel prípadov, kde sa TOP~5 zmenil po skrytí eventu}
+\label{tab:sensitivity}
+\end{table}
+
+T01 (100\,\% hlavná kategória) dosiahla najnižšiu citlivosť 14\,\% - systém
+reagoval na zmenu histórie len v 14\,\% prípadov. Konfigurácia T06 (50\,\%/50\,\%)
+dosiahla maximum 40\,\%, pričom T10 (100\,\% podkategória) skončila na 34\,\%.
+Kombinácia oboch faktorov v rovnakom pomere teda reaguje na zmeny histórie lepšie
+ako ktorýkoľvek faktor samostatne.
+
+\subsection{Obmedzenia metodiky}
+
+Leave-one-out metodika má na syntetických dátach niekoľko prirodzených obmedzení.
+Používatelia s menej ako 5~navštívenými udalosťami predstavujú cold start scenár,
+kde história po skrytí jednej udalosti nestačí na spoľahlivú personalizáciu.
+Pri diverzifikovanej histórii môže skrytie udalosti zmeniť dominantnú kategóriu
+profilu - systém sa správa správne, ale metrika to hodnotí ako miss. Ak používateľ
+navštívil kategóriu len raz, po jej skrytí klesne $C_{main}$ na nulu - ide o
+prirodzenú vlastnosť content-based filtra, nie o chybu implementácie.
+
+\subsection{Záver testovania}
+
+Testovanie potvrdilo, že systém je schopný na základe histórie správne predpovedať
+relevantné udalosti - vo všetkých 5~profiloch a naprieč všetkými konfiguráciami
+váh systém úspešne odporučil udalosti zodpovedajúce dominantným záujmom
+používateľa. Na základe výsledkov testovania citlivosti sme zvolili konfiguráciu
+T06 (50\,\%/50\,\%) ako optimálnu pre produkčné nasadenie. Treba však poznamenať,
+že táto konfigurácia nemusí byť vhodná v každom prípade - pri používateľovi
+s históriou obsahujúcou iba jeden typ udalosti v rámci kategórie môže systém
+odporúčať správne kategórie, ale nemusí správne predpovedať konkrétny typ podujatia.
+Kvalita predpovede závisí nielen od nastavenia váh, ale aj od hĺbky a diverzity
+histórie používateľa.
+
+\newpage
+\appendix
+\section{Detailné výsledky testovacích scenárov}
+\input{GrafyRecomandationSystemu.tex}
+
+
+\end{document}

@@ -1,0 +1,125 @@
+\section{Testovanie odporúčacieho systému}
+
+\subsection{Cieľ testovania}
+
+Cieľom testovania bolo overiť správnosť implementácie odporúčacieho algoritmu
+a jeho citlivosť na zmenu váhového vektora. Keďže systém pracuje so simulovanými
+dátami, nebolo možné merať presnosť odporúčania konkrétnych udalostí — namiesto
+toho sme zvolili metriku Precision@5 na úrovni hlavných kategórií.
+
+Po zvážení výsledkov úvodných experimentov (Príloha~\ref{appendix:experiments})
+sme dospeli k záveru, že na kvalitu personalizácie majú reálny vplyv iba
+\textbf{hlavná kategória a podkategória} — preto sme ďalšie testovanie zamerali
+výlučne na tieto dva faktory.
+
+\subsection{Experiment 1 — Overenie správnosti pre realistické profily}
+
+Prvý experiment overoval, či systém správne odporúča udalosti zodpovedajúce
+dominantnej kategórii používateľa. Vytvorili sme 5~používateľských profilov
+s realistickou históriou:
+
+\begin{itemize}
+    \item \textbf{Sporťák} — 6$\times$ Sports, 1$\times$ Art \& Culture, 1$\times$ Food \& Drinks
+    \item \textbf{Hudobník} — 5$\times$ Music \& Entertainment, 1$\times$ Sports
+    \item \textbf{Umelec} — 4$\times$ Art \& Culture, 1$\times$ Music \& Entertainment
+    \item \textbf{Technik} — 3$\times$ Business \& Tech, 1$\times$ Education
+    \item \textbf{Foodie} — 4$\times$ Food \& Drinks, 1$\times$ Community \& Social
+\end{itemize}
+
+Systém vyhodnotí odporúčanie ako úspešné (\textit{PASS}), ak aspoň 3 z TOP~5
+odporúčaní patria do dominantnej kategórie používateľa. Pre každý profil sme
+spustili algoritmus s 10~konfiguráciami váh, kde sme postupne menili pomer medzi
+hlavnou kategóriou a podkategóriou od 100\,\%/0\,\% až po 0\,\%/100\,\%:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Konfigurácia} & \textbf{Hlavná kategória} & \textbf{Podkategória} \\
+\hline
+W01 & 100\,\% & 0\,\%   \\
+W02 & 90\,\%  & 10\,\%  \\
+W03 & 80\,\%  & 20\,\%  \\
+W04 & 70\,\%  & 30\,\%  \\
+W05 & 60\,\%  & 40\,\%  \\
+W06 & 50\,\%  & 50\,\%  \\
+W07 & 40\,\%  & 60\,\%  \\
+W08 & 30\,\%  & 70\,\%  \\
+W09 & 20\,\%  & 80\,\%  \\
+W10 & 0\,\%   & 100\,\% \\
+\hline
+\end{tabular}
+\caption{Konfigurácie váh pre Experiment 1}
+\label{tab:exp1configs}
+\end{table}
+
+Systém úspešne prešiel všetkými 10~konfiguráciami pre všetkých 5~používateľov.
+Jediný rozdiel sa prejavil pri W10, kde sa na 5.~pozícii začali objavovať udalosti
+z iných kategórií — čo potvrdzuje, že hlavná kategória stabilizuje odporúčania a
+zabraňuje úniku do nesúvisiacich kategórií.
+
+\subsection{Experiment 2 — Testovanie citlivosti}
+
+V rámci testovania citlivosti sme skúmali, ako zmena histórie používateľa ovplyvňuje
+výsledky odporúčacieho systému. Pre každého používateľa sme najprv získali referenčný
+zoznam TOP~5 odporúčaní na základe plnej histórie. Následne sme postupne skrývali
+každý navštívený event a sledovali, či sa TOP~5 zmenil oproti referenčnému zoznamu.
+Zmenu TOP~5 po skrytí eventu považujeme za pozitívny signál — systém reaguje na
+aktuálnu históriu a prispôsobuje odporúčania jej zmenám. Testovanie prebehlo na
+50~používateľoch naprieč rovnakými 10~konfiguráciami váh.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Konfigurácia} & \textbf{Hlavná kat.} & \textbf{Podkategória} & \textbf{AVG citlivosť} \\
+\hline
+T01 & 100\,\% & 0\,\%   & 14\,\% \\
+T02 & 90\,\%  & 10\,\%  & 35\,\% \\
+T03 & 80\,\%  & 20\,\%  & 35\,\% \\
+T04 & 70\,\%  & 30\,\%  & 36\,\% \\
+T05 & 60\,\%  & 40\,\%  & 36\,\% \\
+T06 & 50\,\%  & 50\,\%  & 40\,\% \\
+T07 & 40\,\%  & 60\,\%  & 35\,\% \\
+T08 & 30\,\%  & 70\,\%  & 35\,\% \\
+T09 & 20\,\%  & 80\,\%  & 34\,\% \\
+T10 & 0\,\%   & 100\,\% & 34\,\% \\
+\hline
+\end{tabular}
+\caption{Výsledky testovania citlivosti — podiel prípadov, kde sa TOP~5 zmenil po skrytí eventu}
+\label{tab:sensitivity}
+\end{table}
+
+Konfigurácia T01 s váhou 100\,\% na hlavnú kategóriu dosiahla najnižšiu citlivosť
+14\,\%, čo znamená, že systém reagoval na zmenu histórie len v 14\,\% prípadov.
+Naopak, konfigurácia T06 s rovnomerným rozdelením 50\,\%/50\,\% dosiahla najvyššiu
+citlivosť 40\,\%. Konfigurácia T10 so 100\,\% váhou na podkategóriu dosiahla len
+34\,\%, teda nižšiu citlivosť ako T06. Tento výsledok naznačuje, že kombinácia
+oboch faktorov spôsobuje väčšiu reakciu systému na zmeny histórie ako ktorýkoľvek
+faktor samostatne.
+
+\subsection{Obmedzenia metodiky}
+
+Leave-one-out metodika má na syntetických dátach niekoľko prirodzených obmedzení.
+Používatelia s menej ako 5~navštívenými udalosťami predstavujú cold start scenár,
+kde po skrytí jednej udalosti zostáva história príliš malá na spoľahlivú
+personalizáciu — ich výsledky by mali byť interpretované samostatne. Pri
+diverzifikovanej histórii môže odstránenie jednej udalosti zmeniť dominantnú
+kategóriu profilu, pričom systém správne odporučí eventy zodpovedajúce aktuálnej
+histórii, ale metrika to hodnotí ako miss — nejde o chybu algoritmu, ale o
+obmedzenie metodiky. V neposlednom rade, ak používateľ navštívil určitú kategóriu
+iba raz, po jej skrytí klesne hodnota $C_{main}$ na nulu a algoritmus nemá
+matematický základ pre odporučenie podobného obsahu. Ani tento jav nepovažujeme
+za chybu, ale za prirodzenú vlastnosť Content-based filtra vyžadujúceho aspoň
+minimálnu stopu v histórii.
+
+\subsection{Záver testovania}
+
+Testovanie potvrdilo, že algoritmus je deterministický a citlivý na zmenu váhového
+vektora. Precision systému je priamo úmerná koncentrácii histórie používateľa —
+Content-based filtrovanie funguje najlepšie pre používateľov s jasne definovanými
+záujmami. Na základe výsledkov Experimentu~2 sme zvolili konfiguráciu T06
+(50\,\%/50\,\%) ako optimálnu pre produkčné nasadenie, keďže kombinácia hlavnej
+kategórie a podkategórie v rovnakom pomere zabezpečuje najlepšiu reakciu systému
+na zmeny histórie používateľa. Pre komplexnú evalváciu kvality personalizácie by
+bolo potrebné testovanie na reálnych používateľských dátach po nasadení aplikácie.
