@@ -1,0 +1,63 @@
+\section{Architektonické vzory a princípy návrhu}
+Úspešná mobilná aplikácia musí byť postavená na robustnej architektúre, ktorá zaručuje jej škálovateľnosť a udržateľnosť v ekosystéme rôznych zariadení (telefóny, tablety, ChromeOS či skladacie zariadenia). Podľa oficiálnej dokumentácie spoločnosti Google je základným cieľom architektúry definovať hranice medzi jednotlivými časťami aplikácie a jasne určiť ich zodpovednosť.
+
+\subsection{Základné princípy moderného návrhu}
+Pred definovaním konkrétnych vzorov je potrebné určiť pravidlá, ktoré musí moderná architektúra spĺňať pre zachovanie stability v prostredí s obmedzenými systémovými prostriedkami:
+
+\begin{itemize}
+    \item \textbf{Separation of concerns (Oddelenie zodpovedností):} Kľúčový princíp, ktorý zakazuje sústredenie kódu v triedach \textit{Activity} alebo \textit{Fragment}. Tieto komponenty slúžia primárne ako hostitelia používateľského rozhrania, sú krátkodobé (\textit{ephemeral}) a operačný systém ich môže kedykoľvek zničiť z dôvodu nedostatku pamäte alebo zmeny konfigurácie.
+    \item \textbf{Drive UI from data models (Riadenie UI dátovými modelmi):} Používateľské rozhranie by malo byť postavené na dátových modeloch, ktoré sú nezávislé od životného cyklu UI prvkov. Perzistentné modely zabezpečujú, že aplikácia nestratí dáta pri reštarte procesu a zostáva funkčná aj pri nestabilnom pripojení k sieti.
+    \item \textbf{Single Source of Truth (SSOT - Jednotný zdroj pravdy):} Každý dátový typ má priradeného svojho vlastníka, ktorý ako jediný môže dáta modifikovať. Zmeny sa následne propagujú prostredníctvom imutabilných typov, čo znižuje výskyt chýb a uľahčuje ladenie systému.
+    \item \textbf{Unidirectional Data Flow (UDF - Jednosmerný tok dát):} Stav aplikácie prúdi smerom nadol (od SSOT k UI elementom) a udalosti/akcie prúdia smerom nahor. Tento vzor zaručuje konzistenciu dát v celom systéme.
+\end{itemize}
+
+
+
+\subsection{Porovnanie architektonických vzorov}
+V histórii vývoja platformy Android sa vyvinulo niekoľko prístupov k organizácii kódu, ktoré reagovali na narastajúcu komplexnosť aplikácií:
+
+\begin{enumerate}
+    \item \textbf{MVC (Model-View-Controller):} Tradičný model, kde Controller riadi tok dát. V Androide tento vzor zlyhával, pretože triedy \textit{Activity} preberali úlohu controllera aj view súčasne, čo viedlo k vzniku ťažko udržiavateľného kódu.
+    \item \textbf{MVP (Model-View-Presenter):} Oddelil zodpovednosť medzi View a Presenter. Problémom zostala vysoká previazanosť a nutnosť manuálneho ošetrovania životného cyklu, čo spôsobovalo úniky pamäte (\textit{memory leaks}).
+    \item \textbf{MVVM (Model-View-ViewModel):} Súčasný štandard. \textit{ViewModel} uchováva stav aplikácie nezávisle od UI komponentov, čím rieši problém s reštartovaním aktivít a stratu dát pri zmene orientácie zariadenia.
+\end{enumerate}
+
+\subsection{Odporúčaná viacvrstvová architektúra}
+Moderná Android architektúra (MAA) definuje tri základné vrstvy:
+
+\begin{itemize}
+    \item \textbf{Používateľská vrstva (UI Layer):} Zobrazuje dáta na obrazovke a reaguje na interakciu používateľa. Skladá sa z UI elementov (vytvorených v \textit{Jetpack Compose}) a držiteľov stavu (\textit{ViewModels}), ktorí transformujú biznis dáta do formy vhodné pre zobrazenie.
+    \item \textbf{Dátová vrstva (Data Layer):} Obsahuje biznis logiku aplikácie – pravidlá, ako sa dáta vytvárajú, ukladajú a menia. Skladá sa z \textbf{repozitárov}, ktoré zapuzdrujú prístup k rôznym zdrojom dát (Firebase, lokálna pamäť).
+    \item \textbf{Doménová vrstva (Domain Layer):} Voliteľná vrstva, ktorá zapuzdruje komplexnú biznis logiku využiteľnú viacerými ViewModelmi súčasne (tzv. \textit{Use Cases}).
+\end{itemize}
+%https://developer.android.com/topic/architecture
+
+\section{Moderné používateľské rozhranie s Jetpack Compose}
+Tradičný vývoj používateľského rozhrania v systéme Android sa dlhé roky spoliehal na imperatívny prístup pomocou XML šablón. S príchodom knižnice \textbf{Jetpack Compose} však nastal posun k \textbf{deklaratívnej paradigme}. Tento prístup zásadne mení spôsob, akým aplikácia synchronizuje dáta s vizuálnou reprezentáciou na obrazovke \cite{android_compose_docs}.
+
+\subsection{Princípy deklaratívneho návrhu}
+Podľa oficiálnej dokumentácie vývojár v Compose definuje rozhranie ako priamu funkciu stavu ($UI = f(state)$). Tento model prináša niekoľko kľúčových konceptov:
+
+\begin{itemize}
+    \item \textbf{The Declarative UI:} Vývojár popisuje cieľový stav rozhrania, nie jednotlivé kroky k jeho dosiahnutiu. To eliminuje potrebu manuálnej manipulácie s prvkami (napr. \texttt{findViewById}).
+    \item \textbf{Encapsulation (Zapuzdrenie):} Kompozitné funkcie (\textit{Composables}) sú samostatné jednotky, ktoré v sebe zapuzdrujú logiku zobrazenia aj správania, čím zvyšujú modularitu kódu.
+    \item \textbf{Composition over Inheritance:} Na rozdiel od staršieho systému, kde každý prvok musel dediť od triedy \texttt{View}, Compose stavia na skladaní komponentov. To umožňuje väčšiu flexibilitu pri tvorbe komplexných prvkov, ako sú karty podujatí v odporúčacom systéme.
+\end{itemize}
+
+\subsection{Dynamický životný cyklus: Rekompozícia a Stav}
+Kľúčovým mechanizmom, ktorý zabezpečuje responzivitu aplikácie, je \textbf{rekompozícia}. Ide o proces inteligentného prekresľovania, kedy framework opätovne spúšťa len tie časti kódu, ktorých stav (\textit{state}) sa zmenil.
+
+\begin{itemize}
+    \item \textbf{State Hoisting:} Ide o vzor návrhu, kde sa stav presúva do vyššej zložky (caller), čím sa kompozitná funkcia stáva \textit{stateless} (bezstavová). To uľahčuje testovateľnosť a znovupoužiteľnosť komponentov.
+    \item \textbf{Inteligentná optimalizácia:} Dokumentácia uvádza, že rekonštrukcia môže prebiehať veľmi často (napríklad pri animáciách), preto sú funkcie v Compose navrhnuté tak, aby boli rýchle a nemali vedľajšie účinky (\textit{side-effects}).
+\end{itemize}
+
+
+
+\subsection{Vplyv na efektivitu vývoja}
+Prechod na Jetpack Compose podľa Google znižuje objem kódu potrebného na tvorbu UI o približne 40 \%. V kontexte tejto práce to umožňuje rýchlu iteráciu návrhu mapových prvkov a dynamických zoznamov, pričom je zachovaná vysoká miera bezpečnosti voči chybám v životnom cykle aplikácie.
+
+%https://medium.com/androiddevelopers/understanding-jetpack-compose-part-1-of-2-ca316fe3a050
+%https://developer.android.com/develop/ui/compose/documentation
+
+

@@ -1,24 +1,55 @@
-\section{Základné pojmy v oblasti vývoja mobilných aplikácií}
+\section{Vývoj mobilných aplikácií}
 
 \subsection{Prístupy k vývoju mobilných aplikácií}
-Podľa IBM možno proces vývoja mobilných aplikácií definovať ako tvorbu softvéru navrhnutého špecificky pre smartfóny a tablety, pričom kľúčovým rozhodnutím je voľba platformy a technológie implementácie. V súčasnosti dominujú dva hlavné prístupy:
+% Čerpané z: IBM (základná definícia) a Riyas Pullur (technické porovnanie 2025)
+Podľa spoločnosti IBM možno proces vývoja mobilných aplikácií definovať ako tvorbu softvéru navrhnutého špecificky pre mobilné koncové zariadenia, pričom kľúčovým rozhodnutím je technológia implementácie. V súčasnosti sa vývojári rozhodujú primárne medzi natívnym a multiplatformovým prístupom, ktoré sa líšia výkonom a náročnosťou na zdroje \cite{pullur_medium_2025}:
 
 \begin{itemize}
-    \item \textbf{Natívny vývoj (Native Development):} Tento prístup využíva natívne API a programovacie jazyky špecifické pre daný operačný systém (napr. Kotlin pre Android). Natívny vývoj je odporúčaný najmä pre podnikové aplikácie vyžadujúce intenzívnu komunikáciu cez API a vysoký výpočtový výkon, nakoľko umožňuje plne využiť potenciál hardvéru zariadenia.
-    \item \textbf{Hybridný vývoj (Hybrid Development):} Využíva prístup „napíš raz, spusti všade“ (\textit{write-once-run-anywhere}). Aplikácie sú postavené na univerzálnych webových technológiách (HTML, CSS, JavaScript). Hoci je tento proces rýchlejší, má obmedzený prístup k natívnym funkciám systému a je vhodný skôr pre jednoduchšie aplikácie s limitovanou funkcionalitou.
-\end{itemize}
+    \item \textbf{Natívne aplikácie:} Sú vyvíjané priamo pre konkrétnu platformu (Android, iOS) pomocou dedikovaných nástrojov. Ponúkajú najvyšší výkon a neobmedzený prístup k hardvéru, čo je kľúčové pre aplikácie náročné na systémové zdroje.
+    \item \textbf{Webové mobilné aplikácie:} Ide o responzívne webové stránky využívajúce technológie HTML5, CSS a JavaScript, ktoré bežia v prehliadači zariadenia. Modernou formou sú tzv. \textit{Progressive Web Apps} (PWA), ktoré umožňujú inštaláciu na domovskú obrazovku, avšak ich prístup k nízkoúrovňovým funkciám hardvéru (napr. pokročilý geofencing) je limitovaný.
+    \item \textbf{Hybridné aplikácie:} Kombinujú predchádzajúce prístupy. Jadro aplikácie je písané vo webových technológiách, ktoré sú následne "zabalené" do natívneho kontajnera. Tento prístup uľahčuje multiplatformový vývoj, no prináša výkonnostnú réžiu spojenú s prekladom volaní medzi webovou a natívnou vrstvou.
+\end{itemize} 
+%toto je z https://opac.crzp.sk/?fn=detailBiblioFormChildO1BU&sid=9A7D98113A4E7D6F09AF71A0EB46&seo=CRZP-detail-kniha
 
+\subsection{Technické obmedzenia a optimalizácia výkonu}
+% Čerpané z: IBM (Cloud Offloading) a Riyas Pullur (Battery & Resource Efficiency)
+Vývoj pre mobilné platformy vyžaduje špecifický prístup k správe prostriedkov, ktoré sú v porovnaní s desktopovými systémami limitované. Moderný vývojár sa zameriava na tri kľúčové oblasti:
 
-
-\subsection{Hardvérové obmedzenia a optimalizácia}
-Vývoj pre mobilné platformy prináša špecifické výzvy, ktoré v klasickom desktopovom vývoji nie sú také kritické. Medzi hlavné faktory patrí obmedzený výpočtový výkon a kapacita pamäte mobilných zariadení. 
-
-Z tohto dôvodu musí moderný vývojár dbať na:
 \begin{enumerate}
-    \item \textbf{Efektívnu správu zdrojov:} Mobilné aplikácie musia byť navrhnuté tak, aby spotrebúvali menej systémových prostriedkov než ich desktopové alternatívy.
-    \item \textbf{Cloudové spracovanie (\textit{Cloud Offloading}):} V prípade náročných operácií, ako sú pokročilé odporúčacie algoritmy, je vhodné presunúť výpočtovú záťaž na cloudové servery prostredníctvom rozhraní API. To umožňuje aplikácii poskytovať komplexné funkcie bez preťaženia lokálneho hardvéru.
-    \item \textbf{Optimalizáciu používateľského rozhrania:} Rozhranie musí byť navrhnuté s dôrazom na dotykové ovládanie (\textit{touch-based design}) a jednoduchosť (UX), aby používateľ dosiahol cieľ s minimálnym počtom interakcií.
+    \item \textbf{Energetická a systémová efektivita:} Natívne aplikácie vykazujú vyššiu energetickú efektivitu, čo je kľúčové pri aplikáciách využívajúcich lokalizačné služby (GPS). Efektívna správa prostriedkov priamo ovplyvňuje výdrž batérie zariadenia \cite{pullur_medium_2025}.
+    \item \textbf{Cloudové spracovanie (\textit{Cloud Offloading}):} Náročné výpočtové operácie, ako sú komplexné odporúčacie algoritmy, je podľa odporúčaní IBM vhodné delegovať na cloudové servery. Tým sa predchádza preťaženiu lokálneho hardvéru a nadmernému zahrievaniu zariadenia.
+    \item \textbf{Odozva používateľského rozhrania (UI):} Natívne frameworky (ako Jetpack Compose) dosahujú najlepšiu plynulosť animácií a rýchlosť odozvy na dotyk. Vďaka priamemu prístupu k vykresľovacím API systému je minimalizované riziko zasekávania rozhrania pri spracovaní dát na pozadí.
 \end{enumerate}
 
 \subsection{Distribúcia a ekosystém platforiem}
-Voľba operačného systému ovplyvňuje nielen vývoj, ale aj distribúciu. Kým platforma Android (Google Play) predstavuje približne 70 \% trhu a ponúka flexibilnejšie pravidlá pre distribúciu a testovanie MVP (\textit{Minimum Viable Product}), ekosystém iOS vyžaduje prísnejšie dodržiavanie štandardov kvality, čo však často vedie k vyššej miere udržania používateľov (\textit{user retention}).
+% Čerpané z: IBM (Market share & MVP approach)
+Voľba operačného systému ovplyvňuje nielen technologický zásobník, ale aj stratégiu uvedenia na trh. Platforma Android, s približne 70 \% trhovým podielom, je často preferovaná pre nasadenie minimálneho životaschopného produktu (MVP) kvôli flexibilnejším pravidlám v obchode Google Play. Naopak, ekosystém iOS vyžaduje striktnejšie dodržiavanie dizajnových a bezpečnostných štandardov, čo sa odzrkadľuje na vyššej miere udržania používateľov.
+
+Avšak je dôležité poznamenať, že multiplatformové nástroje, ako sú Flutter a React Native, umožňujú súčasné nasadenie na oboch platformách, avšak s kompromisom v oblasti výkonu a optimalizácie zdrojov. Preto je kritické zhodnotiť požiadavky projektu a očakávania používateľov pri výbere vhodného prístupu k vývoju mobilnej aplikácie.
+toto su vysledky podla  https://medium.com/@riyaspullurofficial/native-vs-cross-platform-app-size-and-performance-comparison-550cb7f918b0
+\begin{table}[h!]
+\centering
+\caption{Súhrnné porovnanie natívneho a multiplatformového vývoja (spracované podľa \cite{pullur_medium_2025})}
+\label{tab:final_comparison}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Metrika} & \textbf{Native} & \textbf{Flutter} & \textbf{React Native} & \textbf{KMM} \\ \hline
+Veľkosť aplikácie & \textbf{Najmenšia} & Väčšia & Väčšia & Stredná \\ \hline
+Rýchlosť štartu & \textbf{Najrýchlejšia} & Stredná & Pomalšia & Rýchla \\ \hline
+Animácie & \textbf{Plynulé} & Plynulé & Riziko lagov & -- \\ \hline
+Zdieľanie kódu & Žiadne & 95 \% + & 90 \% + & Logika \\ \hline
+Debugging & \textbf{Najlepšie nástroje} & Silné & Slabšie & -- \\ \hline
+Spotreba batérie & \textbf{Nízka} & Stredná & Vysoká & Nízka \\ \hline
+Optimalizácia zdrojov & \textbf{Pokročilá} & Zlepšuje sa & Základná & -- \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Toolkit Jetpack Compose}
+V rámci natívneho vývoja pre systém Android predstavuje \textbf{Jetpack Compose} moderný toolkit pre budovanie používateľského rozhrania. Na rozdiel od tradičného imperatívneho prístupu (pomocou XML súborov) využíva \textbf{deklaratívnu paradigmu}. 
+
+Kľúčové vlastnosti Jetpack Compose zahŕňajú:
+\begin{itemize}
+    \item \textbf{Menej kódu:} Odstraňuje potrebu manuálneho prepojenia UI prvkov s logikou aplikácie.
+    \item \textbf{Rekompozícia:} Inteligentný proces, pri ktorom systém automaticky prekresľuje len tie časti obrazovky, v ktorých došlo k zmene dát (\textit{State}).
+    \item \textbf{Plná integrácia s Kotlinom:} Využíva pokročilé vlastnosti jazyka, ako sú korutíny pre asynchrónne operácie, čo prispieva k plynulosti aplikácie.
+\end{itemize}
