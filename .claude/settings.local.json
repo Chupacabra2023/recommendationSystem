@@ -4,7 +4,12 @@
       "Bash(flutter analyze:*)",
       "Bash(flutter build:*)",
       "Bash(python:*)",
-      "Bash(py:*)"
+      "Bash(py:*)",
+      "Bash(code:*)",
+      "Bash(cd:*)",
+      "Bash(tasklist:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 10032 -Force; Write-Host 'Done'\")"
     ],
     "deny": [],
     "ask": []

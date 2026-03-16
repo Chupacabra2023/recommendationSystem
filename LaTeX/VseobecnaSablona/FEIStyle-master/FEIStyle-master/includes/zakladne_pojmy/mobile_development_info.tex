@@ -1,0 +1,24 @@
+\section{Základné pojmy v oblasti vývoja mobilných aplikácií}
+
+\subsection{Prístupy k vývoju mobilných aplikácií}
+Podľa IBM možno proces vývoja mobilných aplikácií definovať ako tvorbu softvéru navrhnutého špecificky pre smartfóny a tablety, pričom kľúčovým rozhodnutím je voľba platformy a technológie implementácie. V súčasnosti dominujú dva hlavné prístupy:
+
+\begin{itemize}
+    \item \textbf{Natívny vývoj (Native Development):} Tento prístup využíva natívne API a programovacie jazyky špecifické pre daný operačný systém (napr. Kotlin pre Android). Natívny vývoj je odporúčaný najmä pre podnikové aplikácie vyžadujúce intenzívnu komunikáciu cez API a vysoký výpočtový výkon, nakoľko umožňuje plne využiť potenciál hardvéru zariadenia.
+    \item \textbf{Hybridný vývoj (Hybrid Development):} Využíva prístup „napíš raz, spusti všade“ (\textit{write-once-run-anywhere}). Aplikácie sú postavené na univerzálnych webových technológiách (HTML, CSS, JavaScript). Hoci je tento proces rýchlejší, má obmedzený prístup k natívnym funkciám systému a je vhodný skôr pre jednoduchšie aplikácie s limitovanou funkcionalitou.
+\end{itemize}
+
+
+
+\subsection{Hardvérové obmedzenia a optimalizácia}
+Vývoj pre mobilné platformy prináša špecifické výzvy, ktoré v klasickom desktopovom vývoji nie sú také kritické. Medzi hlavné faktory patrí obmedzený výpočtový výkon a kapacita pamäte mobilných zariadení. 
+
+Z tohto dôvodu musí moderný vývojár dbať na:
+\begin{enumerate}
+    \item \textbf{Efektívnu správu zdrojov:} Mobilné aplikácie musia byť navrhnuté tak, aby spotrebúvali menej systémových prostriedkov než ich desktopové alternatívy.
+    \item \textbf{Cloudové spracovanie (\textit{Cloud Offloading}):} V prípade náročných operácií, ako sú pokročilé odporúčacie algoritmy, je vhodné presunúť výpočtovú záťaž na cloudové servery prostredníctvom rozhraní API. To umožňuje aplikácii poskytovať komplexné funkcie bez preťaženia lokálneho hardvéru.
+    \item \textbf{Optimalizáciu používateľského rozhrania:} Rozhranie musí byť navrhnuté s dôrazom na dotykové ovládanie (\textit{touch-based design}) a jednoduchosť (UX), aby používateľ dosiahol cieľ s minimálnym počtom interakcií.
+\end{enumerate}
+
+\subsection{Distribúcia a ekosystém platforiem}
+Voľba operačného systému ovplyvňuje nielen vývoj, ale aj distribúciu. Kým platforma Android (Google Play) predstavuje približne 70 \% trhu a ponúka flexibilnejšie pravidlá pre distribúciu a testovanie MVP (\textit{Minimum Viable Product}), ekosystém iOS vyžaduje prísnejšie dodržiavanie štandardov kvality, čo však často vedie k vyššej miere udržania používateľov (\textit{user retention}).

@@ -1,0 +1,557 @@
+\paragraph{Prečo potrebujeme odporúčací systém?}
+
+V moderných aplikáciách s veľkým množstvom obsahu čelia používatelia problému \textbf{informačného preťaženia}. Odporúčací systém rieši tento problém tým, že:
+
+\begin{itemize}
+    \item \textbf{Personalizuje obsah} -- Každý používateľ vidí iný, pre neho relevantný obsah
+    \item \textbf{Zvyšuje engagement} -- Používatelia trávia viac času v aplikácii
+    \item \textbf{Pomáha objavovať} -- Používatelia nájdu obsah, ktorý by sami nenašli
+    \item \textbf{Zlepšuje používateľský zážitok} -- Menej scrollovania, viac relevancie
+\end{itemize}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsubsection{Typy odporúčacích systémov}
+% ═══════════════════════════════════════════════════════════════════════════════
+
+Existuje niekoľko základných prístupov k tvorbe odporúčacích systémov. Každý má svoje výhody a nevýhody.
+
+\begin{itemize}
+    \item Content-based filtering
+    \item Collaborative filtering
+    \item Hybridné odporúčacie systémy
+\end{itemize}
+
+\paragraph{Collaborative Filtering (Kolaboratívne filtrovanie)}
+
+Tento prístup odporúča položky na základe správania \textbf{podobných používateľov}.
+Je založený na princípe, že:
+\begin{quote}
+„Používatelia, ktorí mali v minulosti podobné preferencie, budú mať podobné preferencie aj v budúcnosti."
+\end{quote}
+Inými slovami, ak dvaja používatelia reagovali podobne na určité položky (napr. hodnotenia, návštevy, obľúbené položky), systém predpokladá, že ich preferencie sa budú ďalej podobať a môže im odporučiť rovnaké alebo blízke položky.
+
+\textit{Ako funguje:}
+\begin{enumerate}
+    \item Nájdi používateľov s podobnou históriou (napr. podobné hodnotenia filmov)
+    \item Pozri, čo títo podobní používatelia hodnotili vysoko
+    \item Odporuč tieto položky aktuálnemu používateľovi
+\end{enumerate}
+
+\vspace{1em}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.44\textwidth} >{\raggedright\arraybackslash}p{0.44\textwidth}}
+\toprule
+\textbf{Výhody} & \textbf{Nevýhody} \\
+\midrule
+Nevyžaduje informácie o obsahu položiek &
+\textbf{Cold Start Problem} -- Nefunguje pre nových používateľov bez histórie \\[0.5em]
+Dokáže objaviť nečakané súvislosti &
+\textbf{Sparsity Problem} -- Väčšina používateľov hodnotí len malú časť položiek \\[0.5em]
+Funguje naprieč rôznymi doménami &
+\textbf{Škálovateľnosť} -- S rastúcim počtom používateľov rastie výpočtová náročnosť \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Content-Based Filtering (Filtrovanie založené na obsahu)}
+
+Tento prístup odporúča položky na základe \textbf{vlastností položiek}, ktoré sa používateľovi páčili v minulosti.
+Je založený na princípe, že:
+\begin{quote}
+„Ak sa ti páčili položky s určitými vlastnosťami, budú sa ti páčiť aj ďalšie položky s podobnými vlastnosťami."
+\end{quote}
+Inými slovami, systém porovnáva obsah položiek (napr. kategórie, tagy, text, atribúty) a vyberá tie, ktoré sú najviac podobné položkám, s ktorými mal používateľ pozitívnu interakciu.
+
+\textit{Ako funguje:}
+\begin{enumerate}
+    \item Analyzuj vlastnosti položiek (kategória, žáner, autor, ...)
+    \item Vytvor profil používateľa na základe položiek, ktoré konzumoval
+    \item Nájdi položky s podobnými vlastnosťami
+\end{enumerate}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{p{0.42\textwidth} p{0.42\textwidth}}
+\toprule
+\textbf{Výhody} & \textbf{Nevýhody} \\
+\midrule
+Nevyžaduje dáta od iných používateľov &
+Obmedzená diverzita (odporúča stále podobné veci) \\[0.8em]
+Transparentné odporúčania (vieme vysvetliť prečo) &
+Vyžaduje kvalitné metadáta o položkách \\[0.8em]
+Funguje aj pre nové položky &
+Stále má Cold Start problém pre nových používateľov \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Hybrid Systems (Hybridné systémy)}
+
+Kombinujú viacero prístupov pre lepšie výsledky.
+
+\textit{Typy hybridných systémov:}
+\begin{itemize}
+    \item \textbf{Weighted} -- Skóre z rôznych systémov sa kombinujú s váhami
+    \item \textbf{Switching} -- Podľa situácie sa použije vhodnejší systém
+    \item \textbf{Mixed} -- Výsledky z rôznych systémov sa zobrazujú spolu
+    \item \textbf{Cascade} -- Jeden systém spresňuje výsledky druhého
+\end{itemize}
+
+\paragraph{Knowledge-Based Systems (Systémy založené na znalostiach)}
+
+Odporúčajú na základe explicitných požiadaviek používateľa a znalostí o doméne.
+
+Používateľ hľadá: „Event do 10\,km, večer, športový" -- systém aplikuje tieto filtre a vráti vyhovujúce výsledky.
+
+\paragraph{Porovnanie systémov}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Kritérium} & \textbf{Collaborative} & \textbf{Content} & \textbf{Hybrid} & \textbf{Knowledge} \\
+\hline
+Cold Start (používateľ) & Zlé & Zlé & Stredné & Dobré \\
+\hline
+Cold Start (položka) & Zlé & Dobré & Stredné & Dobré \\
+\hline
+Škálovateľnosť & Zlé & Dobré & Stredné & Dobré \\
+\hline
+Diverzita & Dobré & Zlé & Dobré & Stredné \\
+\hline
+Potreba metadát & Nie & Áno & Čiastočne & Áno \\
+\hline
+Vysvetliteľnosť & Stredné & Dobré & Stredné & Dobré \\
+\hline
+\end{tabular}
+\caption{Porovnanie typov odporúčacích systémov}
+\end{table}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsubsection{Náš výber: Content-Based Filtering s kontextom}
+% ═══════════════════════════════════════════════════════════════════════════════
+
+Pre našu eventovú aplikáciu sme zvolili \textbf{Content-Based Filtering} s prvkami kontextového systému.
+
+\paragraph{Prečo Content-Based?}
+
+\begin{enumerate}
+    \item \textbf{Máme kvalitné metadáta} -- Každý event má kategóriu, podkategóriu, lokáciu, hodnotenie
+
+    \item \textbf{Menšia používateľská báza} -- Collaborative filtering potrebuje veľa používateľov. Na začiatku projektu ich nemáme dosť
+
+    \item \textbf{Vysvetliteľnosť} -- Vieme používateľovi povedať „Odporúčame ti toto, lebo máš rád športové eventy"
+
+    \item \textbf{Jednoduchšia implementácia} -- Nepotrebujeme komplexné algoritmy ako matrix factorization
+
+    \item \textbf{Real-time výpočet} -- Skóre sa počíta za behu, nepotrebujeme predpočítané modely
+\end{enumerate}
+
+\paragraph{Kontextové prvky v našom systéme}
+
+Okrem kategórií zohľadňujeme aj:
+
+\begin{itemize}
+    \item \textbf{Vzdialenosť} -- Bližšie eventy majú vyššie skóre
+    \item \textbf{Čas} -- Eventy v minulosti sa ignorujú
+    \item \textbf{Obľúbené} -- Eventy s kategóriou, ktorú má používateľ v obľúbených, dostávajú bonus
+\end{itemize}
+
+\paragraph{Naše rozšírenie: Dvojúrovňové kategórie}
+
+Štandardný Content-Based systém používa jednu úroveň kategórií. My používame dve:
+
+\begin{enumerate}
+    \item \textbf{Hlavná kategória} -- Široká skupina (napr. \textit{Sports})
+    \item \textbf{Podkategória} -- Špecifická (napr. \textit{Cycling sports})
+\end{enumerate}
+
+Toto umožňuje presnejšie odporúčania -- používateľ, ktorý navštívil cyklistický event, dostane bonus pre ďalšie cyklistické eventy, nie len všeobecne športové.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsubsection{Váhy a ich význam}
+% ═══════════════════════════════════════════════════════════════════════════════
+
+Náš systém používa 6 faktorov, každý s vlastnou váhou ktorú si vieme nastaviť v testovacej aplikácii pomocou sliderov. Štandardne sú všetky váhy nastavené na rovnakú hodnotu $\frac{1}{6}$ (približne 16,67\,\%), čím je zabezpečené, že žiadny faktor nemá väčší vplyv ako ostatné.
+
+\begin{lstlisting}[language=Java, caption=Definícia váh s defaultnými hodnotami]
+static double MAIN_CATEGORY_WEIGHT = 1.0 / 6.0;       // 16.67%
+static double SUB_CATEGORY_WEIGHT = 1.0 / 6.0;        // 16.67%
+static double DISTANCE_WEIGHT = 1.0 / 6.0;            // 16.67%
+static double RATING_WEIGHT = 1.0 / 6.0;              // 16.67%
+static double POPULARITY_WEIGHT = 1.0 / 6.0;          // 16.67%
+static double FAVORITE_SUBCATEGORY_BONUS = 1.0 / 6.0; // 16.67%
+\end{lstlisting}
+
+\paragraph{Nastavovanie váh}
+
+Váhy sú vzájomne prepojené -- ich súčet musí byť vždy rovný 1 (100\,\%). Keď používateľ zvýši hodnotu jednej váhy, ostatné sa proporčne znížia, aby bol súčet zachovaný:
+
+\begin{equation}
+\sum_{i=1}^{6} w_i = 1{,}0 \quad \text{(vždy 100\,\%)}
+\end{equation}
+
+Tento prístup umožňuje používateľovi prispôsobiť odporúčania podľa vlastných preferencií -- napríklad zvýšením váhy vzdialenosti dostane viac blízkych eventov, bez ohľadu na kategóriu.
+
+\paragraph{Vzorec celkového skóre}
+
+\begin{equation}
+\boxed{
+Score = w_1 \cdot C_{main} + w_2 \cdot C_{sub} + w_3 \cdot D + w_4 \cdot R + w_5 \cdot P + w_6 \cdot B_{fav}
+}
+\end{equation}
+
+Kde:
+\begin{itemize}
+    \item $w_1 \ldots w_6$ -- Nastaviteľné váhy (súčet = 1,0)
+    \item $C_{main}$ -- Skóre hlavnej kategórie (0,0 -- 1,0)
+    \item $C_{sub}$ -- Skóre podkategórie (0,0 -- 1,0)
+    \item $D$ -- Skóre vzdialenosti (0,0 -- 1,0)
+    \item $R$ -- Skóre ratingu (0,0 -- 1,0)
+    \item $P$ -- Skóre popularity (0,0 -- 1,0)
+    \item $B_{fav}$ -- Bonus za obľúbenú kategóriu (0,0 -- 1,0)
+\end{itemize}
+
+\paragraph{Ohraničenie výsledného skóre}
+
+Keďže každý faktor má hodnotu v rozsahu 0,0 až 1,0 a súčet váh je vždy 1,0, výsledné skóre je garantovane v rozsahu:
+
+\begin{equation}
+0{,}0 \leq Score \leq 1{,}0
+\end{equation}
+
+Toto zabezpečuje konzistentné porovnávanie eventov medzi sebou -- event so skóre 0,8 je vždy lepšie odporúčanie ako event so skóre 0,5.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsubsection{Detailný opis jednotlivých faktorov}
+% ═══════════════════════════════════════════════════════════════════════════════
+
+\textbf{CategoryMapper} zabezpečuje previazanie medzi podkategóriami a hlavnými kategóriami.
+Každý event patrí do jednej konkrétnej podkategórie (napr. \textit{Ball sports}), ktorá je
+automaticky priradená k širšej hlavnej kategórii (napr. \textit{Sports}).
+
+Tento mechanizmus umožňuje systému správne odlíšiť:
+\begin{itemize}
+    \item \textbf{základné preferencie používateľa} (hlavné kategórie),
+    \item \textbf{detailnejšie záujmy} (podkategórie).
+\end{itemize}
+
+\textit{Príklady hlavných kategórií a ich podkategórií:}
+
+\textbf{Sports:} Ball sports, Athletics, Combat sports, Cycling sports, Animal sports,
+Team sports, Extreme sports, Outdoor sports, Fitness \& Wellness
+
+\textbf{Music \& Entertainment:} Koncert, Festival, Party / Clubbing, Karaoke, DJ Set
+
+\paragraph{Hlavná kategória ($C_{main}$)}
+
+Hlavná kategória reprezentuje zhodu medzi preferenciami používateľa a hlavnou kategóriou eventu. Systém najprv vytvorí profil používateľa na základe jeho navštívených eventov -- koľko percent navštívených eventov patrilo do ktorej kategórie.
+
+\textit{Výpočet:}
+\begin{itemize}
+    \item Ak používateľ navštívil 10 eventov, z toho 4 boli „Sports" $\rightarrow$ jeho preferencia pre Sports = 40\,\% (0,4)
+    \item Ak event patrí do kategórie „Sports" $\rightarrow$ $C_{main} = 0{,}4$
+    \item Pre nových používateľov (bez histórie) $\rightarrow$ $C_{main} = 0{,}5$
+    \item Pre kategórie ktoré používateľ nenavštívil $\rightarrow$ $C_{main} = 0{,}05$
+\end{itemize}
+
+\begin{lstlisting}[language=Java, caption=Výpočet skóre hlavnej kategórie]
+double mainCategoryMatch = userProfile[mainCategory] ?? 0.0;
+
+// Pre novych uzivatelov (bez preferencii) dame vsetkym rovnaku sancu
+if (userProfile.isEmpty) {
+  mainCategoryMatch = 0.5;
+} else if (mainCategoryMatch == 0.0) {
+  // Uzivatel tuto kategoriu este nenavstivil
+  mainCategoryMatch = 0.05; // 5%
+}
+
+double mainCategoryScore = mainCategoryMatch * MAIN_CATEGORY_WEIGHT;
+\end{lstlisting}
+
+Ak používateľ danú kategóriu nikdy nenavštívil, priradí sa jej neutrálnych 5\,\%, aby kategória nebola úplne vylúčená z odporúčaní -- najmä v prípadoch, keď sú váhy nastavené extrémne (napr. 100\,\% na kategóriu), aby systém nevrátil prázdny zoznam.
+
+\paragraph{Podkategória ($C_{sub}$)}
+
+Podkategória poskytuje presnejšie odporúčania. Hlavná kategória „Sports" obsahuje mnoho podkategórií (Ball sports, Athletics, Combat sports\ldots). Ak používateľ navštevuje hlavne „Ball sports", systém uprednostní práve tieto eventy.
+
+\textit{Výpočet:}
+\begin{itemize}
+    \item Funguje rovnako ako hlavná kategória, ale na úrovni podkategórií
+    \item Ak používateľ navštívil 3$\times$ „Ball sports" z 10 eventov $\rightarrow$ preferencia = 30\,\% (0,3)
+\end{itemize}
+
+\begin{lstlisting}[language=Java, caption=Výpočet skóre podkategórie]
+double subCategoryMatch = userProfile[subCategory] ?? 0.0;
+double subCategoryScore = subCategoryMatch * SUB_CATEGORY_WEIGHT;
+\end{lstlisting}
+
+\paragraph{Vzdialenosť ($D$)}
+
+Vzdialenosť medzi používateľom a eventom sa počíta pomocou Haversinovho vzorca (vzdialenosť na guľovej ploche Zeme). Bližšie eventy dostávajú vyššie skóre.
+
+\textit{Výpočet:}
+\begin{itemize}
+    \item Používa sa normalizačná formula: $D = \dfrac{1}{1 + \frac{distance}{10}}$
+    \item 0\,km $\rightarrow$ skóre 1,0
+    \item 5\,km $\rightarrow$ skóre 0,66
+    \item 10\,km $\rightarrow$ skóre 0,5
+    \item 20\,km $\rightarrow$ skóre 0,33
+\end{itemize}
+
+\begin{lstlisting}[language=Java, caption=Výpočet skóre vzdialenosti]
+double distance = _calculateDistance(user.location, event.location);
+
+// Normalizacia: blizsie = lepsie skore
+double distanceScore = 1 / (1 + distance / 10);
+distanceScore = distanceScore * DISTANCE_WEIGHT;
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption=Haversinov vzorec pre výpočet vzdialenosti]
+double _calculateDistance(GeoPoint point1, GeoPoint point2) {
+  const double earthRadius = 6371; // km
+
+  double lat1 = point1.latitude * pi / 180;
+  double lat2 = point2.latitude * pi / 180;
+  double dLat = (point2.latitude - point1.latitude) * pi / 180;
+  double dLng = (point2.longitude - point1.longitude) * pi / 180;
+
+  double a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(lat1) * cos(lat2) * sin(dLng / 2) * sin(dLng / 2);
+
+  double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+  return earthRadius * c;
+}
+\end{lstlisting}
+
+\paragraph{Rating ($R$)}
+
+Rating reprezentuje priemerné hodnotenie eventu od ostatných používateľov (1--5 hviezdičiek).
+
+\textit{Výpočet:}
+\begin{itemize}
+    \item Normalizuje sa na rozsah 0,0 -- 1,0 vydelením 5
+    \item Event s ratingom 4,5 $\rightarrow$ skóre = $\frac{4{,}5}{5{,}0} = 0{,}9$
+    \item Nové eventy bez hodnotení dostávajú neutrálne skóre 0,5
+\end{itemize}
+
+\begin{lstlisting}[language=Java, caption=Výpočet skóre ratingu]
+double ratingScore = 0.0;
+
+if (event.totalRatings > 0) {
+  // Ma hodnotenia - pouzi ich
+  ratingScore = (event.rating / 5.0) * RATING_WEIGHT;
+} else {
+  // Novy event - daj mu priemerne skore
+  ratingScore = 0.5 * RATING_WEIGHT; // Neutralne
+}
+\end{lstlisting}
+
+\paragraph{Popularita ($P$)}
+
+Popularita je určená počtom účastníkov (attendees) eventu. Viac účastníkov naznačuje zaujímavejší event.
+
+\textit{Výpočet:}
+\begin{itemize}
+    \item Normalizuje sa na rozsah 0,0 -- 1,0 (maximum pri 100+ účastníkoch)
+    \item 50 účastníkov $\rightarrow$ skóre = $\frac{50}{100} = 0{,}5$
+    \item 100+ účastníkov $\rightarrow$ skóre = 1,0
+\end{itemize}
+
+\begin{lstlisting}[language=Java, caption=Výpočet skóre popularity]
+// Normalizacia: 0-100 ucastnikov -> 0.0-1.0
+double popularityScore = min(event.attendees.length / 100, 1.0);
+popularityScore = popularityScore * POPULARITY_WEIGHT;
+\end{lstlisting}
+
+\paragraph{Bonus za obľúbenú kategóriu ($B_{fav}$)}
+
+Tento bonus sa pridáva eventom, ktoré majú rovnakú podkategóriu ako eventy označené používateľom ako obľúbené.
+
+\textbf{Dôležité:} Obľúbené eventy sa \textbf{nepočítajú} do profilu preferencií -- používajú sa \textbf{výhradne} na tento bonus. To umožňuje používateľovi explicitne označiť čo sa mu páči, bez toho aby to ovplyvnilo celkový profil.
+
+\textit{Výpočet:}
+\begin{itemize}
+    \item Systém najprv načíta podkategórie všetkých obľúbených eventov používateľa
+    \item Ak event patrí do niektorej z týchto podkategórií $\rightarrow$ dostane bonus
+    \item Ak nie $\rightarrow$ bonus = 0
+\end{itemize}
+
+\begin{lstlisting}[language=Java, caption=Načítanie obľúbených podkategórií]
+Set<String> favoriteSubCategories = {};
+
+for (String eventId in user.favoriteEventIds) {
+  final eventDoc = await _firestore
+      .collection('events')
+      .doc(eventId)
+      .get();
+
+  if (eventDoc.exists) {
+    final event = Event.fromJson(eventDoc.data()!, eventId);
+    favoriteSubCategories.add(event.category);
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, caption=Výpočet bonusu za obľúbenú kategóriu]
+double favoriteBonus = 0.0;
+
+if (favoriteSubCategories.contains(subCategory)) {
+  favoriteBonus = FAVORITE_SUBCATEGORY_BONUS;
+}
+\end{lstlisting}
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsubsection{Reálny príklad výpočtu}
+% ═══════════════════════════════════════════════════════════════════════════════
+
+\paragraph{Vstupné dáta}
+
+\textbf{Používateľ:} Test User
+\begin{itemize}
+    \item Navštívené: 8 eventov (3× Sports, 2× Food, 1× Music, 1× Business, 1× Nature)
+    \item Obľúbené: 2 eventy (oba „Cycling sports")
+    \item Lokácia: Bratislava centrum
+\end{itemize}
+
+\textbf{Profil:}
+\begin{verbatim}
+Sports: 37.5%
+Food & Drinks: 25%
+Music & Entertainment: 12.5%
+Business & Tech: 12.5%
+Nature & Outdoor: 12.5%
+Cycling sports: 12.5% (podkategória)
+\end{verbatim}
+
+\textbf{Obľúbené podkategórie:} \{Cycling sports\}
+
+\paragraph{Porovnanie dvoch eventov}
+
+\textbf{Event A:} Cyklistický závod
+\begin{itemize}
+    \item Kategória: Cycling sports $\rightarrow$ Sports
+    \item Vzdialenosť: 5\,km
+    \item Rating: 4,5/5
+    \item Účastníci: 30
+\end{itemize}
+
+\textbf{Event B:} Futbalový turnaj
+\begin{itemize}
+    \item Kategória: Ball sports $\rightarrow$ Sports
+    \item Vzdialenosť: 3\,km
+    \item Rating: 4,8/5
+    \item Účastníci: 50
+\end{itemize}
+
+\paragraph{Výpočet pre Event A (Cycling sports)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Faktor} & \textbf{Hodnota} & \textbf{Výpočet} & \textbf{Skóre} \\
+\hline
+Hlavná kategória & 37,5\,\% & $0{,}375 \times 0{,}3$ & 0,1125 \\
+\hline
+Podkategória & 12,5\,\% & $0{,}125 \times 0{,}3$ & 0,0375 \\
+\hline
+Vzdialenosť & 5\,km & $\frac{1}{1+5/10} \times 0{,}2$ & 0,1333 \\
+\hline
+Rating & 4,5/5 & $0{,}9 \times 0{,}05$ & 0,045 \\
+\hline
+Popularita & 30 & $0{,}3 \times 0{,}05$ & 0,015 \\
+\hline
+Obľúbené bonus & ÁNO & $0{,}1$ & \textbf{0,10} \\
+\hline
+\textbf{CELKOM} & & & \textbf{0,443 (44,3\,\%)} \\
+\hline
+\end{tabular}
+\caption{Výpočet skóre pre Event A}
+\end{table}
+
+\paragraph{Výpočet pre Event B (Ball sports)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Faktor} & \textbf{Hodnota} & \textbf{Výpočet} & \textbf{Skóre} \\
+\hline
+Hlavná kategória & 37,5\,\% & $0{,}375 \times 0{,}3$ & 0,1125 \\
+\hline
+Podkategória & 0\,\% & $0 \times 0{,}3$ & 0 \\
+\hline
+Vzdialenosť & 3\,km & $\frac{1}{1+3/10} \times 0{,}2$ & 0,1538 \\
+\hline
+Rating & 4,8/5 & $0{,}96 \times 0{,}05$ & 0,048 \\
+\hline
+Popularita & 50 & $0{,}5 \times 0{,}05$ & 0,025 \\
+\hline
+Obľúbené bonus & NIE & $0$ & 0 \\
+\hline
+\textbf{CELKOM} & & & \textbf{0,339 (33,9\,\%)} \\
+\hline
+\end{tabular}
+\caption{Výpočet skóre pre Event B}
+\end{table}
+
+\paragraph{Výsledok}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|l|l|c|}
+\hline
+\textbf{\#} & \textbf{Event} & \textbf{Prečo vyhral} & \textbf{Skóre} \\
+\hline
+1 & Cyklistický závod & Podkategória + Obľúbené bonus & \textbf{44,3\,\%} \\
+\hline
+2 & Futbalový turnaj & Len hlavná kategória & 33,9\,\% \\
+\hline
+\end{tabular}
+\caption{Porovnanie výsledkov}
+\end{table}
+
+\textbf{Záver:} Event A vyhráva napriek väčšej vzdialenosti a horšiemu ratingu, pretože:
+\begin{itemize}
+    \item Má zhodu v podkategórii (+3,75\,\%)
+    \item Má bonus za obľúbenú kategóriu (+10\,\%)
+\end{itemize}
+
+Toto demonštruje silu dvojúrovňového kategorizačného systému a bonusu za obľúbené.
+
+% ═══════════════════════════════════════════════════════════════════════════════
+\subsubsection{Zhrnutie}
+% ═══════════════════════════════════════════════════════════════════════════════
+
+\paragraph{Kľúčové vlastnosti nášho systému}
+
+\begin{enumerate}
+    \item \textbf{Content-Based prístup} -- Odporúčania založené na vlastnostiach eventov a histórii používateľa
+
+    \item \textbf{Dvojúrovňové kategórie} -- Hlavná kategória (Sports) + podkategória (Cycling sports) pre presnejšie odporúčania
+
+    \item \textbf{Oddelené zdroje dát}:
+    \begin{itemize}
+        \item Navštívené eventy $\rightarrow$ počítajú profil preferencií
+        \item Obľúbené eventy $\rightarrow$ dávajú bonus pri skórovaní
+    \end{itemize}
+
+    \item \textbf{Kontextové faktory} -- Vzdialenosť, čas, popularita
+
+    \item \textbf{Konfigurovateľné váhy} -- Môžeme ladiť dôležitosť jednotlivých faktorov
+\end{enumerate}
+
+\paragraph{Možné vylepšenia do budúcnosti}
+
+\begin{itemize}
+    \item Pridať časový kontext (ráno/večer, pracovný deň/víkend)
+    \item Implementovať collaborative filtering keď budeme mať viac používateľov
+    \item A/B testovanie rôznych váh
+    \item Strojové učenie pre automatické ladenie váh
+\end{itemize}

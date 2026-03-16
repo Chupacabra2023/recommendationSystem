@@ -1,37 +1,36 @@
-\documentclass[bp]{FEIstyle}
+\documentclass[dp]{FEIstyle}
 
 % Author of the thesis
-\FEIauthor{RNDr. Juraj Chlpík, PhD.}
+\FEIauthor{BC. Marcel Soták}
 
 % Evidence number
-\FEIregNr{FEI-xxxx-xxxx}
+\FEIregNr{FEI-16607-111443}
 
 % Title
-\FEItitle{Rozšírená šablóna záverečnej práce
-na FEI STU v~Bratislave v~systéme \LaTeX}
-\FEItitleEn{Example \LaTeX\ document with long title}
+\FEItitle{Aplikácia na organizovanie stretnutí na základe polohy používateľa}
+\FEItitleEn{Application for Organizing Meetings Based on User Location}
 
 % Date
-\FEIdate{31}{12}{2024}
+\FEIdate{10}{03}{2026}
 
 % Keywords
 \FEIkeywords{záverečná práca, šablóna, \LaTeX, formátovanie textu, citácie}
-\FEIkeywordsEn{Final thesis, template, \LaTeX, text formatting, citations}
+\FEIkeywordsEn{Final thesis, events, meeting, organizer, location, gps, kotlin, android}
 
 % Further details
-\FEIstudyProgramme{názov študijného programu}
-\FEIstudyProgrammeEn{Study program in English}
-\FEIstudyField{názov študijného odboru}
-\FEIstudyFieldEn{Field of the study in English}
-\FEItrainingWorkplace{Názov školiaceho pracoviska}
-\FEItrainingWorkplaceEn{Training Work place}
+\FEIstudyProgramme{Aplikovaná informatika}
+\FEIstudyProgrammeEn{Applied Informatics}
+\FEIstudyField{Informatika}
+\FEIstudyFieldEn{Informatics}
+\FEItrainingWorkplace{Ústav informatiky a matematiky (FEI)}
+\FEItrainingWorkplaceEn{Institute of Informatics and Mathematics (FEI)}
 
 % Supervisor
-\FEIsupervisor{tituly Meno Priezvisko, tituly}
+\FEIsupervisor{Ing. Maroš Čavojský, PhD.}
 
 % Consultant
 % -- if there is none, comment out the next line
-\FEIconsultant{tituly Meno Priezvisko, tituly}
+%\FEIconsultant{tituly Meno Priezvisko, tituly}
 
 % Glossaries -- terms and abbreviations.
 % If you use automatic glossaries,
@@ -40,6 +39,37 @@ na FEI STU v~Bratislave v~systéme \LaTeX}
 
 % Bibliography database file
 \bibliography{includes/bibliography.bib}
+
+% Extra packages
+\usepackage{float}
+\usepackage{array}
+\usepackage{amssymb}
+
+% Farby pre výpisy kódu
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{keywordcolor}{rgb}{0,0,0.7}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{keywordcolor}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    tabsize=2,
+    frame=single
+}
+\lstset{style=mystyle}
 
 \begin{document}
 
@@ -91,7 +121,10 @@ na FEI STU v~Bratislave v~systéme \LaTeX}
 \mainmatter
 
 \FEIintroduction{includes/introduction}
-\FEIcore{includes/core}
+
+\FEIcore{includes/my_core}
+
+%\FEIcore{includes/core}
 \FEIconclusion{includes/conclusion}
 
 %% Uncomment only if the document is writen in english
