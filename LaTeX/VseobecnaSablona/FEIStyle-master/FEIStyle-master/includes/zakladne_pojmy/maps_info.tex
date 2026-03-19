@@ -1,0 +1,20 @@
+\subsection{Google Maps Platform}
+V rámci geolokačných služieb aplikácia využíva dva kľúčové komponenty platformy Google Maps, ktoré umožňujú vizualizáciu dát a interakciu s konkrétnymi miestami.
+
+\subsubsection{Maps SDK for Android}
+\textit{Maps SDK for Android} umožňuje pridávať mapové podklady do aplikácie (vrátane Wear OS) s využitím údajov Google Maps, zobrazenia máp a reakcií na gestá. SDK poskytuje nástroje na vkladanie doplňujúcich informácií o polohách a podporuje interakciu používateľa prostredníctvom značiek (\textit{Markers}), polygónov a iných prekrytí (\textit{Overlays}). 
+
+Platforma plne podporuje programovacie jazyky Kotlin a Java, pričom poskytuje dodatočné knižnice a rozšírenia pre pokročilé funkcie a moderné programovacie techniky.
+% Zdroj: https://developers.google.com/maps/documentation/android-sdk/overview?section=start
+
+\subsubsection{Places SDK for Android}
+\textit{Places SDK for Android} umožňuje vytvárať aplikácie, ktoré kontextuálne reagujú na okolité podniky a iné miesta v blízkosti zariadenia. Tento nástroj dopĺňa základné geografické služby systému Android o bohatú databázu miest, ktoré majú pre používateľa konkrétny význam.
+
+Kľúčové funkcie a rozhrania zahŕňajú:
+\begin{itemize}
+    \item \textbf{Programový prístup k databáze:} SDK poskytuje prístup k informáciám o miestnych podnikoch, bodoch záujmu a aktuálnej polohe zariadenia.
+    \item \textbf{Autocomplete:} Ponúka predpripravené komponenty (\textit{Widgets}) na predpovedanie názvov miest v reakcii na vyhľadávacie dopyty používateľa.
+    \item \textbf{Definícia miesta (\textit{Place}):} Miesto je v rámci API reprezentované rozhraním \textit{Place}. Definujeme ho ako fyzický priestor s názvom (napr. firmy, pamiatky, geografické polohy). Objekt \textit{Place} obsahuje údaje ako názov, adresa, ID miesta, geografická poloha, telefónne číslo, typ miesta či webová adresa.
+\end{itemize}
+Podobne ako Maps SDK, aj tento nástroj plne podporuje jazyky Kotlin a Java vrátane rozšírení pre pokročilý vývoj.
+% Zdroj: https://developers.google.com/maps/documentation/places/android-sdk/overview

@@ -45,11 +45,32 @@ Optimalizácia zdrojov & \textbf{Pokročilá} & Zlepšuje sa & Základná & -- \
 \end{table}
 
 \subsection{Toolkit Jetpack Compose}
-V rámci natívneho vývoja pre systém Android predstavuje \textbf{Jetpack Compose} moderný toolkit pre budovanie používateľského rozhrania. Na rozdiel od tradičného imperatívneho prístupu (pomocou XML súborov) využíva \textbf{deklaratívnu paradigmu}. 
+Jetpack Compose je odporúčaný moderný toolkit spoločnosti Google na budovanie natívneho používateľského rozhrania (UI). 
+Zjednodušuje a urýchľuje vývoj UI na systéme Android tým, že umožňuje rýchlo oživiť aplikáciu s menším množstvom kódu, 
+výkonnými nástrojmi a intuitívnym API v jazyku Kotlin.
 
 Kľúčové vlastnosti Jetpack Compose zahŕňajú:
 \begin{itemize}
-    \item \textbf{Menej kódu:} Odstraňuje potrebu manuálneho prepojenia UI prvkov s logikou aplikácie.
-    \item \textbf{Rekompozícia:} Inteligentný proces, pri ktorom systém automaticky prekresľuje len tie časti obrazovky, v ktorých došlo k zmene dát (\textit{State}).
-    \item \textbf{Plná integrácia s Kotlinom:} Využíva pokročilé vlastnosti jazyka, ako sú korutíny pre asynchrónne operácie, čo prispieva k plynulosti aplikácie.
+    \item \textbf{Menej kódu:} Robte viac s menším množstvom kódu a vyhnite sa celým triedam chýb. Kód je jednoduchý a ľahko udržiavateľný.
+    \item \textbf{Intuitívnosť:} Stačí opísať vaše UI a Compose sa postará o zvyšok. Pri zmene stavu aplikácie sa používateľské rozhranie automaticky aktualizuje.
+    \item \textbf{Zrýchlenie vývoja:} Je kompatibilný so všetkým vaším existujúcim kódom, takže ho môžete prijať kedykoľvek a kdekoľvek chcete. Umožňuje rýchlu iteráciu pomocou živých náhľadov (\textit{Live Previews}) a plnú podporu v prostredí Android Studio.
+    \item \textbf{Výkonnosť:} Compose umožňuje vytvárať atraktívne aplikácie s priamym prístupom k API platformy Android a so vstavanou podporou pre \textit{Material Design}, tmavý režim, animácie a ďalšie funkcie. Rieši deklaratívne UI, prístupnosť (\textit{Accessibility API}) a rozloženie (\textit{Layout}), čím skracuje cestu medzi nápadom a finálnym produktom.
 \end{itemize}
+% Zdroj: https://developer.android.com/compose
+
+\subsection{Programovací jazyk Kotlin}
+Kotlin je moderný programovací jazyk, ktorý je stručný, multiplatformový a plne interoperabilný s 
+jazykom Java a inými jazykmi. Ide o staticky typovaný jazyk, ktorý využíva viac ako 60 \% profesionálnych
+ vývojárov pre Android, pretože pomáha zvyšovať produktivitu, spokojnosť vývojárov a bezpečnosť kódu.
+
+Medzi jeho hlavné výhody patrí:
+\begin{itemize}
+    \item \textbf{Expresívny a stručný:} Moderné funkcie jazyka Kotlin umožňujú zamerať sa na vyjadrenie myšlienok a písať menej redundantného kódu.
+    \item \textbf{Bezpečnejší kód:} Vďaka správe nulových hodnôt (\textit{Nullability}) priamo v systéme typov pomáha predchádzať chybám typu \textit{NullPointerException}. Aplikácie pre Android používajúce Kotlin majú o 20 \% nižšiu pravdepodobnosť pádu.
+    \item \textbf{Základ pre Jetpack Compose:} Moderný toolkit Jetpack Compose je postavený na Kotline, čo umožňuje rýchlo vytvárať adaptívne UI pomocou výkonných a intuitívnych rozhraní.
+    \item \textbf{Kotlin Multiplatform:} Umožňuje zdieľať kód naprieč platformami Android, iOS a desktopovými systémami.
+\end{itemize}
+% Zdroj: https://developer.android.com/develop/ui/compose/kotlin
+
+Jetpack Compose je postavený priamo okolo jazyka Kotlin. V niektorých prípadoch Kotlin poskytuje špeciálne idiómy, ktoré uľahčujú písanie kvalitného kódu v rámci Compose.
+% Zdroj: https://kotlinlang.org/docs/getting-started.html
