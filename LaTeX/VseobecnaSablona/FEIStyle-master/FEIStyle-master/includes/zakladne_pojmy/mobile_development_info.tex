@@ -65,11 +65,15 @@ jazykom Java a inými jazykmi. Ide o staticky typovaný jazyk, ktorý využíva 
 
 Medzi jeho hlavné výhody patrí:
 \begin{itemize}
-    \item \textbf{Expresívny a stručný:} Moderné funkcie jazyka Kotlin umožňujú zamerať sa na vyjadrenie myšlienok a písať menej redundantného kódu.
-    \item \textbf{Bezpečnejší kód:} Vďaka správe nulových hodnôt (\textit{Nullability}) priamo v systéme typov pomáha predchádzať chybám typu \textit{NullPointerException}. Aplikácie pre Android používajúce Kotlin majú o 20 \% nižšiu pravdepodobnosť pádu.
-    \item \textbf{Základ pre Jetpack Compose:} Moderný toolkit Jetpack Compose je postavený na Kotline, čo umožňuje rýchlo vytvárať adaptívne UI pomocou výkonných a intuitívnych rozhraní.
-    \item \textbf{Kotlin Multiplatform:} Umožňuje zdieľať kód naprieč platformami Android, iOS a desktopovými systémami.
+    \item \textbf{Null Safety (Bezpečnosť voči null hodnotám):} Kotlin výrazne znižuje riziko pádov aplikácií (známy \textit{NullPointerException}) tým, že rozlišuje medzi typmi, ktoré môžu a nemôžu nadobúdať hodnotu \texttt{null} už v čase kompilácie. Aplikácie pre Android používajúce Kotlin majú vďaka tomu o 20 \% nižšiu pravdepodobnosť pádu.
+    \item \textbf{Stručnosť a čitateľnosť (Conciseness):} Moderné funkcie jazyka umožňujú písať menej redundantného kódu (\textit{boilerplate}). Príkladom sú dátové triedy (\textit{data class}), ktoré automaticky generujú metódy ako \texttt{equals()} či \texttt{toString()}.
+    \item \textbf{Základ pre Jetpack Compose:} Moderný toolkit Jetpack Compose je postavený výhradne na Kotline, čo umožňuje rýchlo vytvárať adaptívne a intuitívne používateľské rozhrania.
+    \item \textbf{Interoperabilita:} Kotlin je 100 \% kompatibilný s jazykom Java. To umožňuje v rámci jedného projektu kombinovať súbory v oboch jazykoch a bezproblémovo medzi nimi volať funkcie.
+    \item \textbf{Moderné asynchrónne programovanie (Coroutines \& Flow):} Efektívna správa vlákien a práca s prúdmi dát umožňujú vykonávať náročné operácie na pozadí bez blokovania používateľského rozhrania.
+    \item \textbf{Smart Casts (Inteligentné pretypovanie):} Kompilátor automaticky sleduje kontroly typov a pretypuje premenné tam, kde je to bezpečné, čím robí kód čistejším a bezpečnejším.
+    \item \textbf{Kotlin Multiplatform:} Umožňuje zdieľať biznis logiku kódu naprieč platformami Android, iOS a desktopovými systémami.
 \end{itemize}
+
 % Zdroj: https://developer.android.com/develop/ui/compose/kotlin
 
 Jetpack Compose je postavený priamo okolo jazyka Kotlin. V niektorých prípadoch Kotlin poskytuje špeciálne idiómy, ktoré uľahčujú písanie kvalitného kódu v rámci Compose.
