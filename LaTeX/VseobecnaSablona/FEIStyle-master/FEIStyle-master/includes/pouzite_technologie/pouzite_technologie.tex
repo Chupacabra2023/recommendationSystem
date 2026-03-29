@@ -1,0 +1,179 @@
+\subsection{Vývojové prostredie a platforma}
+
+\subsubsection{Operačný systém Android}
+Táto práca je zameraná na vývoj mobilnej aplikácie pre operačný systém \textbf{Android}. Dôvodom zvolenia tejto platformy je jej dominantné postavenie na trhu mobilných zariadení, kde podľa aktuálnych štatistík zaujíma viac ako 70 \% podiel. Android ponúka široké možnosti prispôsobenia a hlbokej integrácie s hardvérovými službami (ako sú lokalizačné služby), čo je kľúčové pre praktickú časť tejto práce.
+\\ (Zdroj: \url{https://gs.statcounter.com/android-version-market-share})
+
+\subsubsection{Distribúcia a ekosystém platforiem}
+Voľba operačného systému ovplyvňuje nielen technologický zásobník, ale aj stratégiu uvedenia na trh. Platforma Android je často preferovaná pre nasadenie minimálneho životaschopného produktu (\textit{MVP}) kvôli flexibilnejším pravidlám v obchode Google Play v porovnaní s uzavretým ekosystémom iOS.
+
+Hoci existujú multiplatformové riešenia, pre účely tejto práce bol zvolený natívny prístup z dôvodu maximálnej optimalizácie výkonu a prístupu k systémovým API. Porovnanie prístupov na základe analýzy \cite{pullur_medium_2025} uvádza Tabuľka \ref{tab:final_comparison}.
+
+\begin{table}[h!]
+\centering
+\caption{Súhrnné porovnanie natívneho a multiplatformového vývoja}
+\label{tab:final_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Metrika} & \textbf{Native (Kotlin)} & \textbf{Flutter} & \textbf{React Native} & \textbf{KMM} \\ \hline
+Veľkosť aplikácie & \textbf{Najmenšia} & Väčšia & Väčšia & Stredná \\ \hline
+Rýchlosť štartu & \textbf{Najrýchlejšia} & Stredná & Pomalšia & Rýchla \\ \hline
+Animácie & \textbf{Plynulé} & Plynulé & Riziko lagov & -- \\ \hline
+Zdieľanie kódu & Žiadne & 95 \% + & 90 \% + & Logika \\ \hline
+Spotreba batérie & \textbf{Nízka} & Stredná & Vysoká & Nízka \\ \hline
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Programovací jazyk Kotlin}
+Kotlin je moderný, staticky typovaný jazyk, ktorý je od roku 2019 preferovanou voľbou spoločnosti Google pre vývoj aplikácií na platformu Android. Medzi jeho kľúčové prínosy pre túto prácu patria:
+
+\begin{itemize}
+    \item \textbf{Null Safety:} Výrazne znižuje riziko pádov aplikácie (chyba \textit{NullPointerException}) vďaka striktnému rozlišovaniu nulovateľných typov už v čase kompilácie.
+    \item \textbf{Coroutines:} Umožňujú efektívne vykonávanie asynchrónnych úloh (napr. sťahovanie dát o podujatiach z cloudu) bez blokovania hlavného vlákna a zamŕzania používateľského rozhrania.
+    \item \textbf{Stručnosť:} Redukcia nadbytočného kódu (\textit{boilerplate}) umožňuje rýchlejšiu implementáciu biznis logiky odporúčacieho algoritmu.
+\end{itemize}
+% (Zdroj: \url{https://developer.android.com/kotlin})
+
+\subsection{UI Toolkit: Jetpack Compose}
+Na tvorbu používateľského rozhrania bol zvolený moderný deklaratívny toolkit \textbf{Jetpack Compose}. Na rozdiel od staršieho systému založeného na XML súboroch, Compose umožňuje definovať UI priamo v jazyku Kotlin.
+
+\begin{itemize}
+    \item \textbf{Deklaratívny prístup:} Programátor opisuje výsledný stav rozhrania, pričom framework sa automaticky stará o jeho prekreslenie pri zmene dát (napr. pri aktualizácii zoznamu podujatí).
+    \item \textbf{Komponentový dizajn:} UI je vyskladané z malých, znovupoužiteľných funkcií (\textit{Composables}), čo uľahčuje údržbu a testovanie aplikácie.
+\end{itemize}
+% (Zdroj: \url{https://developer.android.com/compose})
+
+
+\subsection{Vývojové nástroje}
+Ako už sám naznačuje názov, Android Studio je oficiálne vývojové prostredie (IDE) bohaté na funkcie pre vývoj aplikácií pre Android, ktoré integruje nástroje na návrh, kódovanie, tvorbu a testovanie.
+Ponúka natívnu podporu pre Kotlin, Java a C++, rozsiahlu rozšíriteľnosť pluginov a bezproblémovú emuláciu naprieč typmi zariadení.
+Pravidelné aktualizácie zabezpečujú kompatibilitu s novými verziami systému Android, pokročilé ladenie a analýzu výkonu v jednotnom prostredí a preto je ideálnou voľbou pre tento projekt.
+% (Zdroj: \url{https://developer.android.com/studio})
+% https://www.ikkaro.net/sk/what-is-android-studio/
+
+\subsection{Technická špecifikácia a použité knižnice}
+
+\subsection{Android SDK a správa verzií}
+Kľúčovým pilierom vývoja je \textbf{Android SDK} (\textit{Software Development Kit}), čo je sada vývojových nástrojov poskytovaná spoločnosťou Google. SDK obsahuje knižnice, ladiace nástroje a emulátory potrebné na transformáciu zdrojového kódu do spustiteľného balíka aplikácie. 
+
+V rámci projektu je správa verzií riešená definovaním úrovní rozhraní API (\textit{API Levels}), ktoré určujú rozsah kompatibility a dostupné systémové funkcie \cite{geeks_android_sdk}.
+
+\begin{itemize}
+    \item \textbf{minSdk 26 (Android 8.0 Oreo):} Táto hodnota stanovuje najnižšiu možnú verziu systému, na ktorej je možné aplikáciu spustiť. Voľba verzie 26 bola zvolená ako optimálny kompromis medzi dostupnosťou moderných API (napr. vylepšené kanály notifikácií či správa úloh na pozadí) a širokým pokrytím trhu, ktoré aktuálne presahuje 90 \% aktívnych zariadení.
+    \item \textbf{targetSdk 35 (Android 15):} Informuje operačný systém, pre ktorú najnovšiu verziu bola aplikácia optimalizovaná a testovaná. Použitie aktuálneho SDK zabezpečuje, že aplikácia dodržiava najnovšie bezpečnostné štandardy a protokoly ochrany súkromia, ktoré systém Android vyžaduje pre moderné aplikácie v obchode Google Play.
+\end{itemize}
+
+Rozdiel medzi týmito úrovňami definuje spätnú kompatibilitu. Zatiaľ čo \textit{minSdk} garantuje spustenie aplikácie na staršom hardvéri, \textit{targetSdk} umožňuje systému aktivovať špecifické optimalizácie výkonu a zabezpečenia určené pre najnovšie generácie mobilných zariadení.
+https://www.geeksforgeeks.org/android/android-sdk-and-its-components/
+
+
+\subsubsection{Dizajnový systém Material Design 3}
+Vizuálna identita a používateľské rozhranie aplikácie sú postavené na najnovšom štandarde \textbf{Material Design 3} (známy aj ako \textit{Material You}). Ide o adaptívny systém usmernení, komponentov a nástrojov vyvinutý spoločnosťou Google, ktorý podporuje osvedčené postupy pri navrhovaní moderných používateľských rozhraní \cite{material_io_m3}.
+
+Hlavným prínosom integrácie Material Design 3 do projektu je zefektívnenie spolupráce medzi dizajnom a vývojom, čo umožňuje rýchle budovanie estetických a funkčných produktov.
+
+\begin{itemize}
+    \item \textbf{Komponentové sady:} Material 3 poskytuje širokú škálu sád komponentov, ktoré sú špecificky navrhnuté pre rôzne prípady použitia a veľkosti obrazoviek. V projekte sú využité kľúčové prvky ako \texttt{TopAppBar} (horná lišta aplikácie), \texttt{NavigationDrawer} (bočné navigačné menu) a \texttt{Card} (karty pre prehľadné zobrazenie informácií o podujatiach).
+    \item \textbf{Adaptivita a prístupnosť:} Systém je navrhnutý tak, aby sa automaticky prispôsoboval rôznym rozlíšeniam a orientáciám displeja, pričom kladie veľký dôraz na čitateľnosť a prístupnosť (\textit{accessibility}) pre všetkých používateľov.
+    \item \textbf{Integrácia s Jetpack Compose:} Využitie knižnice \texttt{androidx.compose.material3} umožňuje natívne deklaratívne definovanie štýlov, farieb a typografie priamo v kóde Kotlin, čím sa zabezpečuje vizuálna konzistencia naprieč celou aplikáciou.
+\end{itemize}
+% Zdroj: https://m3.material.io/get-started
+% Zdroj: https://developer.android.com/develop/ui/compose/designsystems/material3
+
+
+
+\subsection{Externé softvérové knižnice}
+Pre rozšírenie základných funkcií systému Android a zabezpečenie plynulého používateľského zážitku boli do projektu integrované špecializované knižnice. Tieto nástroje riešia kritické úlohy od navigácie v deklaratívnom prostredí až po nízkoúrovňovú komunikáciu s hardvérom kamery.
+
+\subsubsection{Navigation Compose (2.8.5)}
+Knižnica \textbf{Navigation Compose} poskytuje infraštruktúru pre riadenie toku obrazoviek v aplikáciách postavených na Jetpack Compose. Umožňuje definovať navigačný graf priamo v kóde Kotlin, čím nahrádza staršie riešenia založené na XML súboroch a fragmentoch.
+\begin{itemize}
+    \item \textbf{NavHost:} Slúži ako vizuálny kontajner, ktorý dynamicky vymieňa jednotlivé kompozitné funkcie (\textit{composables}) na základe aktuálnej trasy.
+    \item \textbf{NavController:} Centrálny objekt, ktorý spravuje zásobník obrazoviek (\textit{backstack}) a zabezpečuje správnu reakciu na systémové tlačidlo „Späť“.
+    \item \textbf{Typová bezpečnosť:} Verzia 2.8.5 prináša natívnu podporu pre typovo bezpečnú navigáciu, čo eliminuje chyby pri prenose argumentov (napr. ID podujatia) medzi obrazovkami.
+\end{itemize}
+% Zdroj: https://developer.android.com/develop/ui/compose/navigation
+
+\subsubsection{CameraX (1.3.4)}
+\textbf{CameraX} je moderná knižnica zameraná na prácu s fotoaparátom, ktorá odstraňuje zložitosť spojenú so správou špecifík hardvéru od rôznych výrobcov. Je postavená na koncepte prípadov použitia (\textit{use-cases}), z ktorých boli v projekte implementované najmä:
+\begin{itemize}
+    \item \textbf{Preview:} Zabezpečuje plynulý živý náhľad obrazu z kamery priamo v používateľskom rozhraní.
+    \item \textbf{Image Analysis:} Poskytuje prístup k obrazovým dátam v reálnom čase, čo je kľúčové pre \textbf{algoritmy na skenovanie a dekódovanie QR kódov} pri vstupe na podujatia.
+    \item \textbf{Image Capture:} Umožňuje zachytávanie fotografií (napr. pre profilové fotky alebo dokumentáciu podujatia) s automatickou optimalizáciou expozície a zaostrenia.
+\end{itemize}
+% Zdroj: https://developer.android.com/media/camera/camerax
+
+\subsubsection{Coil (2.7.0)}
+Názov \textbf{Coil} predstavuje akronym pre \textit{Coroutine Image Loader}. Ide o efektívnu knižnicu na asynchrónne načítavanie obrázkov z cloudu (Firebase Storage), ktorá je plne optimalizovaná pre prostredie Kotlin Coroutines.
+\begin{itemize}
+    \item \textbf{Optimalizácia výkonu:} Knižnica automaticky vykonáva operácie ako cachovanie na disk a do pamäte RAM, zmenu mierky obrázkov (\textit{downsampling}) a inteligentné rušenie sieťových požiadaviek pri odscrollovaní prvku z obrazovky.
+    \item \textbf{Integrácia s Compose:} Vďaka natívnej podpore pre Jetpack Compose umožňuje zobrazenie obrázkov s minimálnym množstvom riadiaceho kódu (\textit{boilerplate}), čím zvyšuje čitateľnosť projektu.
+\end{itemize}
+% Zdroj: https://coil-kt.github.io/coil/
+
+
+\subsection{Architektúra projektu}
+V projekte využívame architektúru \textbf{MVVM} (\textit{Model-View-ViewModel}) v kombinácii s \textbf{Repository pattern}. Tento prístup je oficiálne odporúčaný spoločnosťou Google a predstavuje súčasný štandard v Android komunite pre budovanie škálovateľných a udržiavateľných aplikácií.
+
+Model MVVM pozostáva z troch základných komponentov, z ktorých každý má jasne definovanú zodpovednosť:
+\begin{itemize}
+    \item \textbf{Model:} Reprezentuje dátovú vrstvu a biznis logiku. V našom prípade sem patrí komunikácia s Firebase a správa lokálnych dát.
+    \item \textbf{View (Zobrazenie):} Používateľské rozhranie, ktoré pasívne zobrazuje dáta a odosiela akcie používateľa do ViewModelu.
+    \item \textbf{ViewModel (Model zobrazenia):} Pôsobí ako prostredník, ktorý pripravuje dáta z modelu pre zobrazenie a udržiava stav aplikácie nezávisle od životného cyklu rozhrania.
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/MVVM}
+    \caption{Diagram architektúry MVVM s Repository pattern v systéme Android}
+    \label{fig:mvvm_architecture}
+\end{figure}
+
+Hlavným dôvodom voľby MVVM sú jeho prínosy pre stabilitu projektu, najmä \textbf{zvýšená testovateľnosť} (možnosť testovať logiku bez UI), \textbf{jednoduchšia údržba} vďaka oddeleniu zodpovedností a \textbf{odolnosť voči zmenám konfigurácie} (napr. otočenie displeja), kedy ViewModel chráni dáta pred stratou.
+%https://medium.com/@zorbeytorunoglu/mvvm-in-android-059e9aae84c1
+\subsubsection{Moderný prístup: MVVM v kombinácii s Jetpack Compose}
+V súlade s princípmi čistého návrhu (\textit{Clean Architecture}) opísanými v \cite{sks_medium_2024}, je v projekte implementovaný vzor MVVM s dôrazom na \textbf{jednosmerný tok dát} (\textit{Unidirectional Data Flow - UDF}). Tradičný mechanizmus \textit{Data Bindingu} známy zo starších verzií Androidu je tu nahradený moderným reaktívnym prístupom:
+
+\begin{itemize}
+    \item \textbf{State Hoisting (Vynášanie stavu):} ViewModel uchováva kompletný stav obrazovky v podobe imutabilného objektu (napr. \textit{EventsUiState}). UI komponenty sú takmer bezstavové (\textit{stateless}), čo uľahčuje ich znovupoužiteľnosť.
+    \item \textbf{Reaktívne pozorovanie (StateFlow):} Používateľské rozhranie je prepojené s \textit{StateFlow} vo ViewModele. Akákoľvek zmena v dátach (napr. aktualizácia zoznamu podujatí) vyvolá okamžitú \textbf{rekompozíciu} (automatické prekreslenie) dotknutých častí rozhrania.
+    \item \textbf{Spracovanie udalostí (Events):} Všetky akcie používateľa sú prenášané ako udalosti smerom k ViewModelu. View nikdy neupravuje dáta priamo, čo zaručuje, že \textit{ViewModel} zostáva jediným zdrojom pravdy (\textit{Single Source of Truth}).
+\end{itemize}
+%https://medium.com/@sks727633/mvvm-with-jetpack-compose-structuring-your-app-for-clean-architecture-42f4bad4c99e
+%geminy 29.03.2026 8:54 spoj mi dokopy tieto dva texty 
+
+
+\subsection{Platforma Firebase}
+Firebase predstavuje komplexnú platformu cloudových služieb od spoločnosti Google, ktorá je navrhnutá na zrýchlenie vývoja, zvýšenie bezpečnosti a zabezpečenie škálovateľnosti moderných aplikácií. Platforma pokrýva celý životný cyklus vývoja softvéru a je využívaná svetovými lídrami ako Duolingo, NPR či Venmo.
+% Zdroj: https://firebase.google.com/
+
+\subsubsection{Dôvody voľby a kľúčové výhody}
+Voľba tejto platformy pre účely mojej práce vychádza z jej schopnosti riešiť zložité vývojové výzvy pomocou integrovaných produktov:
+\begin{itemize}
+    \item \textbf{Efektívna autentifikácia:} Poskytuje robustné knižnice pre správu používateľov, overovanie hesiel a integráciu poskytovateľov tretích strán (Google, GitHub atď.).
+    \item \textbf{Škálovateľné úložisko:} Cloud Storage umožňuje efektívnu prácu s používateľským obsahom, ako sú obrázky a videá, s vysokou úrovňou zabezpečenia.
+    \item \textbf{Real-time synchronizácia:} NoSQL databázy (Firestore, Realtime Database) umožňujú synchronizáciu dát naprieč klientmi v reálnom čase, a to aj v offline režime.
+    \item \textbf{Bezpečnosť a správa:} Flexibilné bezpečnostné pravidlá chránia dáta pred neoprávneným prístupom priamo na úrovni cloudu.
+    \item \textbf{Serverless logika:} Cloud Functions umožňujú rozšíriť funkcionalitu aplikácie o asynchrónne spracovanie na pozadí bez nutnosti správy vlastného servera.
+\end{itemize}
+% Zdroj: https://www.geeksforgeeks.org/firebase/why-use-firebase/
+
+\subsection{Firebase Authentication}
+Firebase Authentication poskytuje backendové služby, ľahko použiteľné súpravy SDK a hotové knižnice používateľského rozhrania na autentifikáciu používateľov v aplikácii. Podporuje overovanie pomocou hesiel, telefónnych čísiel a populárnych poskytovateľov identít (Google, Facebook, Twitter). Služba využíva moderné priemyselné štandardy ako \textit{OAuth 2.0} a \textit{OpenID Connect}, pričom zabezpečuje kompletnú správu relácií a overovanie e-mailových adries.
+% Zdroj: \url{https://firebase.google.com/docs/auth}
+
+\subsection{Firebase Firestore}
+Cloud Firestore je flexibilná, škálovateľná NoSQL databáza určená pre mobilný a webový vývoj. Udržiava dáta synchronizované medzi klientskymi aplikáciami prostredníctvom reaktívnych poslucháčov (\textit{realtime listeners}). 
+
+
+
+Kľúčovou vlastnosťou pre túto prácu je \textbf{offline podpora}, ktorá umožňuje aplikácii plynule fungovať aj pri nestabilnom internetovom pripojení tým, že lokálne cachuje potrebné dáta a synchronizuje ich hneď po obnovení siete.
+% Zdroj: \url{https://firebase.google.com/docs/firestore}
+
+\subsection{Firebase Storage}
+Cloud Storage pre Firebase je výkonná a nákladovo efektívna služba určená na ukladanie objektov, ako sú fotografie podujatí či profilové obrázky používateľov. Súpravy SDK zabezpečujú vysokú mieru spoľahlivosti pri nahrávaní a sťahovaní súborov bez ohľadu na kvalitu sieťového pripojenia, pričom prístup k súborom je striktne riadený integračnými pravidlami Firebase Authentication.
+% Zdroj: \url{https://firebase.google.com/docs/storage}
+
+

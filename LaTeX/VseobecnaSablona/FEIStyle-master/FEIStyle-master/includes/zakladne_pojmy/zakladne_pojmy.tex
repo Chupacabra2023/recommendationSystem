@@ -1,0 +1,322 @@
+
+
+
+\subsection{Základné pojmy}
+V tejto kapitole sa zameriame na všeobecné pojmy a technológie, ktoré sú kľúčové pre správne pochopenie problematiky vývoja mobilných aplikácií a implementácie odporúčacích systémov. Cieľom je poskytnúť čitateľovi pevný základ, na ktorom bude možné stavať v ďalších častiach práce.
+
+\subsection{Architektúra a komunikácia v distribuovaných systémoch}
+Základom modernej sieťovej komunikácie je efektívne rozdelenie úloh medzi jednotlivé uzly v sieti. Tento prístup umožňuje lepšiu správu zdrojov a vysokú škálovateľnosť aplikácií.
+
+\subsubsection{Klient-server architektúra}
+Architektúra klient-server predstavuje systém, ktorý vykonáva funkcie klienta aj servera s cieľom podporiť zdieľanie informácií medzi nimi. Tento model umožňuje viacerým používateľom pristupovať k rovnakej databáze v rovnakom čase, pričom databáza slúži na ukladanie veľkého množstva informácií \cite{sulyman2014}.
+(Zdroj: \url{https://www.researchgate.net/profile/Shakirat-Sulyman/publication/271295146_Client-Server_Model/links/5864e11308ae8fce490c1b01/Client-Server-Model.pdf})
+
+\begin{itemize}
+    \item \textbf{Server:} Predstavuje počítač alebo softvérový systém, ktorý poskytuje dáta, zdroje alebo služby iným počítačom v sieti, ktoré označujeme ako klienti. \\ (Zdroj: \url{https://en.wikipedia.org/wiki/Server_(computing)})
+    \item \textbf{Klient:} Ide o kus počítačového hardvéru alebo softvéru, ktorý pristupuje k službe sprístupnenej serverom v rámci modelu klient-server v počítačových sieťach. \\ (Zdroj: \url{https://en.wikipedia.org/wiki/Client_(computing)})
+\end{itemize}
+
+\subsubsection{Komunikačné rozhrania a protokoly (REST API a HTTP)}
+Na to, aby si klient a server v distribuovanom systéme rozumeli, potrebujú spoločný komunikačný štýl a protokol. V súčasnosti je najrozšírenejším štandardom rozhranie \foreignlanguage{english}{Representational State Transfer} (REST API). Ide o aplikačné programové rozhranie, ktoré vyhovuje princípom architektonického štýlu REST. Jeho podstata spočíva v práci so zdrojmi, ktorými môže byť akákoľvek informácia, napríklad používateľ, produkt alebo dokument \cite{google_cloud_rest}.
+
+Celý proces komunikácie prebieha v dvoch základných krokoch:
+\begin{enumerate}
+    \item \textbf{Klient odošle požiadavku:} Mobilná aplikácia iniciuje požiadavku na vykonanie akcie smerom k API. Táto požiadavka obsahuje metódu HTTP, hlavičky s metadátami a prípadne telo s dátami.
+    \item \textbf{Server spracuje požiadavku:} Server prijme a overí požiadavku (autentifikácia a autorizácia). Následne ju spracuje, čo môže zahŕňať načítanie dát z databázy alebo vytvorenie nového zdroja. \\ (Zdroj: \url{https://cloud.google.com/discover/what-is-rest-api})
+\end{enumerate}
+
+Samotným nosným médiom pre túto komunikáciu je protokol \foreignlanguage{english}{Hypertext Transfer Protocol} (HTTP). Ide o základný aplikačný protokol, ktorý umožňuje komunikáciu a prenos dát v prostredí celosvetovej siete. V architektúre klient-server funguje ako „jazyk“, ktorým sa tieto dve strany dorozumievajú. \\ (Zdroj: \url{https://gemini.google.com/app/6ed6e44697b48104} -- konzultácia 29.03.2026)
+
+\subsubsection{Cloudové riešenia a služby}
+Cloud môžeme prirovnať k virtuálnemu priestoru, prostredníctvom ktorého používatelia vytvárajú, zdieľajú a narábajú s obrovským množstvom informácií rôzneho typu. Ide o výpočtové zdroje dostupné na vyžiadanie (\foreignlanguage{english}{on-demand}), ku ktorým má používateľ prístup cez internet \cite{eset_cloud}.
+
+Dáta sa ukladajú na cloudové servery umiestnené v dátových centrách po celom svete a sú plne riadené ich poskytovateľom. Za poplatok môže zákazník na týchto serveroch prevádzkovať svoj softvér, využívať ich výpočtový výkon či úložisko na ukladanie vlastných dát. \\ (Zdroj: \url{https://bezpecnenanete.eset.com/sk/it-bezpecnost/co-je-to-cloud-a-ako-funguje/})
+
+\subsection{Správa a ukladanie dát}
+Databáza funguje ako digitálne úložisko, ktoré organizuje dáta potrebné pre chod aplikácie. Podľa spôsobu ukladania a výkonu ich najčastejšie delíme na:
+
+\subsubsection{Relačné databázy (SQL)}
+Dáta sú v tomto modeli organizované do \textbf{tabuliek} s riadkami a stĺpcami. Medzi najpoužívanejšie systémy podľa portálu Webglobe \cite{webglobe_databaza} patria:
+\begin{itemize}
+    \item \textbf{MySQL:} Jednoduchá a rýchla databáza, hojne využívaná pri menších až stredne veľkých aplikáciách.
+    \item \textbf{MariaDB:} Ponúka vyšší výkon a rozšírené funkcie, je vhodná aj pre náročnejšie aplikácie.
+    \item \textbf{PostgreSQL:} Výkonná a robustná databáza s pokročilými funkciami, ideálna pre veľké a zložité aplikácie.
+\end{itemize}
+
+(Zdroj: \url{https://www.webglobe.sk/poradna/co-je-databaza})
+
+\subsubsection{Nerelačné databázy (NoSQL)}
+Na rozdiel od tabuliek ukladajú dáta flexibilne, najčastejšie ako \textbf{dokumenty}. Tento typ (napr. Firebase Firestore) je kľúčový pre moderné mobilné aplikácie, pretože umožňuje meniť štruktúru dát „za pochodu“ bez nutnosti reštartovania systému \cite{aws_nosql}.
+\\ 
+(Zdroj: \url{https://aws.amazon.com/nosql/})
+
+\subsubsection{Real-time databázy}
+Špeciálny typ databázy, ktorý \textbf{okamžite synchronizuje zmeny} medzi serverom a všetkými pripojenými používateľmi bez nutnosti obnovovania aplikácie. Je to základ pre funkcie ako chaty alebo živé aktualizácie obsahu \cite{firebase_db}.
+\\ (Zdroj: \url{https://firebase.google.com/docs/database})
+
+
+
+
+\subsubsection{Autentifikácia}
+Autentifikácia je proces overenia používateľa (overenia jeho identity), teda zistenie, o koho ide. Môže sa to overiť podľa kombinácie mena a hesla, biometrie (napr. otlačku prsta alebo rozpoznania hlasu), alebo iným zariadením. 
+
+https://sk.wikipedia.org/wiki/Autentifik%C3%A1cia
+
+\subsubsection{Faktory a metódy autentifikácie}
+V informatike delíme spôsoby overenia používateľa do troch základných kategórií podľa toho, na čom sú založené:
+\begin{itemize}
+    \item \textbf{Znalostný faktor:} Niečo, čo používateľ pozná (napr. heslo, PIN).
+    \item \textbf{Faktor vlastníctva:} Niečo, čo používateľ má (napr. smartfón, bezpečnostný token).
+    \item \textbf{Dedičný faktor:} Niečo, čím používateľ je (biometria – odtlačok prsta, sken tváre).
+\end{itemize}
+
+Pre dosiahnutie vysokej bezpečnosti sa odporúča \textbf{viacfaktorové overenie} (MFA), ktoré kombinuje aspoň dva z vyššie uvedených faktorov. V mobilných zariadeniach sa čoraz častejšie využíva aj tzv. \textbf{kontinuálne overovanie}, ktoré neustále monitoruje identitu používateľa na základe biometrie správania (napr. štýl písania alebo dynamika dotyku). 
+
+\subsubsection{Digitálna autentifikácia a bezpečnosť}
+Proces digitálneho overovania pozostáva z prihlásenia (vytvorenie poverení) a samotnej autentifikácie (predloženie dôkazu identity, napr. tokenu). Pri sieťovej komunikácii je kľúčové chrániť tento proces pred útokmi typu \textit{Man-in-the-Middle} (MITM), kedy sa útočník snaží zachytiť prenášané údaje. 
+\\ (Zdroj: \url{https://sk.wikipedia.org/wiki/Autentifikácia})
+
+\subsubsection{Autorizácia}
+
+Autorizácia je proces overenia oprávnení pre danú úlohu, teda či autentifikovaný používateľ (systém) má oprávnenie vykonať úlohu, o ktorú žiada (napr. vstúpiť do systému alebo vykonať platobnú operáciu).
+\subsubsection{Mechanizmus trvalého prihlásenia (Token-based Authentication)}
+V moderných mobilných aplikáciách je žiaduce, aby používateľ nebol nútený zadávať prihlasovacie údaje pri každom otvorení aplikácie. Tento proces sa nazýva \textit{perzistentná autentifikácia} a je realizovaný pomocou systému dvoch typov tokenov (bezpečnostných kľúčov):
+
+\begin{itemize}
+    \item \textbf{Access Token (Prístupový kľúč):} Krátkodobý token (platnosť zvyčajne 60 minút), ktorý mobilná aplikácia pripája ku každej požiadavke na server. Slúži ako dôkaz, že používateľ je momentálne overený.
+    \item \textbf{Refresh Token (Obnovovací kľúč):} Dlhodobý token uložený v šifrovanej pamäti zariadenia. Jeho jedinou úlohou je vyžiadať si nový \textit{Access Token} v prípade, že pôvodný vypršal.
+\end{itemize}
+
+Tento cyklus prebieha na pozadí bez zásahu používateľa (tzv. \textit{Silent Re-authentication}). Ak je \textit{Refresh Token} stále platný, aplikácia automaticky obnoví reláciu, čím zabezpečí plynulý používateľský zážitok pri zachovaní vysokej bezpečnosti, keďže samotné heslo sa sieťou prenáša iba raz – pri prvotnom prihlásení.
+\\ (Zdroj: \url{https://auth0.com/docs/secure/tokens/refresh-tokens})
+
+
+
+\subsection{Vývoj mobilných aplikácií}
+
+\subsubsection{Mobilná aplikácia}
+Mobilná aplikácia je softvérová aplikácia vytvorená špecificky pre smartfóny, tablety alebo iné mobilné zariadenia, ktorá si vyžaduje inštaláciu, čím sa líši od bežného webu. V prvom rade vďaka nim dokážeme rozlíšiť smartfón od bežného telefónu.
+\\ (Zdroj: \url{https://www.eliteml.sk/blog/mobilne-aplikacie-v-skratke/})
+
+\subsubsection{Programovacie jazyky}
+Programovací jazyk obsahuje inštrukcie vytvorené programátormi, ktoré riadia počítač pri vykonávaní konkrétnych úloh. Tieto inštrukcie, bežne vnímané ako komplexný kód, dodržiavajú odlišnú syntax špecifickú pre každý programovací jazyk a slúžia ako nevyhnutné nástroje pre vývoj softvéru a rôzne výpočtové úlohy.
+\\ (Zdroj: \url{https://codelabsacademy.com/sk/blog/what-is-a-programming-language})
+
+\subsubsection{Softvérové frameworky}
+Framework je softvérová platforma alebo sada nástrojov, ktorá poskytuje štruktúru a základné funkcionality pre vývoj softvéru. Frameworky uľahčujú vývoj aplikácií tým, že poskytujú preddefinovanú štruktúru, architektúru a sadu nástrojov, ktoré zjednodušujú a urýchľujú proces vývoja.
+\\ (Zdroj: \url{https://coderama.com/slovnik/framework})
+
+\subsubsection{Vývojové prostredia a proces spracovania kódu}
+Na písanie a správu programovacieho kódu využívajú vývojári špecializované softvérové nástroje, ktoré označujeme ako \textbf{IDE} (\textit{Integrated Development Environment} – Integrované vývojové prostredie). Tieto nástroje siahajú od jednoduchých textových editorov s podporou syntaxe až po komplexné systémy, ktoré obsahujú:
+
+\begin{itemize}
+    \item \textbf{Editor kódu:} Miesto na samotný zápis inštrukcií s funkciami ako automatické dopĺňanie kódu.
+    \item \textbf{Debugger:} Nástroj na vyhľadávanie a opravu logických chýb v programe.
+    \item \textbf{Kompilátor / Interpret:} Špeciálny program, ktorý transformuje (kompiluje) kód napísaný programátorom do binárnej podoby (strojového kódu), ktorej rozumie hardvér mobilného zariadenia alebo procesor.
+\end{itemize}
+
+Medzi najpoužívanejšie prostredia pre mobilný vývoj patria napríklad \textbf{Android Studio}, \textbf{Visual Studio Code} (populárne pre frameworky ako React Native alebo Flutter) či \textbf{Xcode} pre platformu iOS. Výber konkrétneho prostredia často závisí od zvoleného programovacieho jazyka a cieľovej platformy.
+\\ (Zdroj: \url{https://it-slovnik.cz/pojem/ide-integrovane-vyvojove-prostredi})
+%geminy 29.03.2026 8.27 napis mi nieco o prostredi 
+
+
+
+\subsubsection{Prístupy k vývoju mobilných aplikácií}
+Podľa spoločnosti IBM možno proces vývoja mobilných aplikácií definovať ako tvorbu softvéru navrhnutého špecificky pre mobilné koncové zariadenia, pričom kľúčovým rozhodnutím je technológia implementácie. V súčasnosti sa vývojári rozhodujú primárne medzi natívnym a multiplatformovým prístupom \cite{pullur_medium_2025}:
+
+\begin{itemize}
+    \item \textbf{Natívne aplikácie:} Sú vyvíjané priamo pre konkrétnu platformu (Android, iOS) pomocou dedikovaných nástrojov. Ponúkajú najvyšší výkon a neobmedzený prístup k hardvéru.
+    \item \textbf{Webové mobilné aplikácie:} Ide o responzívne webové stránky využívajúce technológie HTML5, CSS a JavaScript. Modernou formou sú tzv. \textit{Progressive Web Apps} (PWA).
+    \item \textbf{Hybridné aplikácie:} Kombinujú predchádzajúce prístupy. Jadro aplikácie je písané vo webových technológiách, ktoré sú následne "zabalené" do natívneho kontajnera.
+\end{itemize} 
+(Zdroj: \url{https://opac.crzp.sk/?fn=detailBiblioFormChildO1BU&sid=9A7D98113A4E7D6F09AF71A0EB46&seo=CRZP-detail-kniha})
+
+
+
+\subsubsection{Technické obmedzenia a optimalizácia výkonu}
+Vývoj pre mobilné platformy vyžaduje špecifický prístup k správe prostriedkov, ktoré sú v porovnaní s desktopovými systémami limitované:
+
+\begin{enumerate}
+    \item \textbf{Energetická a systémová efektivita:} Natívne aplikácie vykazujú vyššiu energetickú efektivitu, čo je kľúčové pri aplikáciách využívajúcich lokalizačné služby (GPS) \cite{pullur_medium_2025}.
+    \item \textbf{Cloudové spracovanie (\textit{Cloud Offloading}):} Náročné výpočtové operácie, ako sú komplexné odporúčacie algoritmy, je vhodné delegovať na cloudové servery (napr. Firebase).
+    \item \textbf{Odozva používateľského rozhrania (UI):} Natívne frameworky dosahujú najlepšiu plynulosť animácií a rýchlosť odozvy na dotyk.
+\end{enumerate}
+
+\subsubsection{Distribúcia a ekosystém platforiem}
+Platforma Android, s približne 70 \% trhovým podielom, je často preferovaná pre nasadenie MVP kvôli flexibilnejším pravidlám. Naopak, ekosystém iOS vyžaduje striktnejšie dodržiavanie štandardov. Multiplatformové nástroje ako Flutter a React Native umožňujú súčasné nasadenie na oboch platformách s určitým kompromisom v oblasti výkonu.
+\\ (Zdroj: \url{https://medium.com/@riyaspullurofficial/native-vs-cross-platform-app-size-and-performance-comparison-550cb7f918b0})
+
+\begin{table}[h!]
+\centering
+\caption{Súhrnné porovnanie vývojových prístupov (podľa \cite{pullur_medium_2025})}
+\label{tab:final_comparison}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Metrika} & \textbf{Native} & \textbf{Flutter} & \textbf{React Native} & \textbf{KMM} \\ \hline
+Veľkosť aplikácie & \textbf{Najmenšia} & Väčšia & Väčšia & Stredná \\ \hline
+Zdieľanie kódu & Žiadne & 95 \% + & 90 \% + & Logika \\ \hline
+Spotreba batérie & \textbf{Nízka} & Stredná & Vysoká & Nízka \\ \hline
+\end{tabular}
+\end{table}
+
+%\url{https://www.ibm.com/think/topics/mobile-application-development}
+%https://medium.com/@riyaspullurofficial/native-vs-cross-platform-app-size-and-performance-comparison-550cb7f918b0 
+
+\subsection{Geolokačné technológie a ich využitie}
+Geolokácia je proces identifikácie geografickej polohy zariadenia. Podľa analýzy spoločnosti Sensolus \cite{sensolus_geoloc} sa v moderných systémoch využívajú štyri hlavné technológie, ktoré sa líšia presnosťou a energetickou náročnosťou:
+
+\begin{itemize}
+    \item \textbf{GPS (Global Positioning System):} Využíva satelitné signály. Je najpresnejší v exteriéri (na metre), ale má vysokú spotrebu batérie a nefunguje vo vnútri budov.
+    \item \textbf{Wi-Fi Sniffing:} Určuje polohu skenovaním okolitých Wi-Fi sietí. Je ideálny pre mestské prostredie a prechod medzi budovami, pričom spotrebúva menej energie ako GPS.
+    \item \textbf{BLE (Bluetooth Low Energy):} Využíva malé vysielače (beacons). Poskytuje extrémnu presnosť v interiéroch (napr. sklady), ale vyžaduje inštaláciu fyzických zariadení v priestore.
+    \item \textbf{LPWAN Geolocation:} Využíva nízkoenergetické siete (napr. Sigfox) na trianguláciu signálu. Má najdlhšiu výdrž batérie (roky), ale nižšiu presnosť (stovky metrov).
+\end{itemize}
+
+
+
+\subsubsection{Operačná efektivita a hybridný prístup}
+Výber správnej technológie priamo ovplyvňuje prevádzkovú efektivitu systému. V mobilnom vývoji sa najčastejšie využíva tzv. \textbf{hybridná geolokácia}, ktorá inteligentne prepína medzi GPS a Wi-Fi podľa dostupnosti signálu a stavu batérie. To umožňuje aplikáciám efektívne sledovať polohu používateľa bez nadmerného zaťaženia hardvéru.
+\\ (Zdroj: \url{https://www.sensolus.com/knowledge-hub/behind-the-tech/four-geolocation-technologies-compared-how-can-they-improve-your-operational-efficiency/})
+
+\subsubsection{Matematické metódy určovania polohy}
+Na výpočet presnej polohy zariadenia zo získaných signálov (rádiových, satelitných či Bluetooth) sa v informatike využívajú nasledujúce geometrické a fyzikálne metódy:
+
+\begin{itemize}
+    \item \textbf{TOA (Time of Arrival):} Metóda meria absolútny čas, za ktorý signál prejde od vysielača k prijímaču. Na určenie polohy v 2D priestore sú potrebné aspoň tri vysielače (trilaterácia).
+    \item \textbf{TDOA (Time Difference of Arrival):} Nameria sa rozdiel v čase príchodu signálov z viacerých vysielačov. Je to praktickejšie ako TOA, pretože nevyžaduje dokonalú synchronizáciu hodín medzi vysielačom a mobilným zariadením.
+    \item \textbf{AOA (Angle of Arrival):} Táto metóda neurčuje vzdialenosť, ale \textbf{uhol}, pod ktorým signál prichádza k anténe. Kombináciou uhlov z dvoch staníc je možné určiť presný bod polohy (triangulácia).
+    \item \textbf{RSS (Received Signal Strength):} Odhaduje vzdialenosť na základe útlmu sily signálu. Čím je signál slabší, tým je zariadenie pravdepodobne ďalej od vysielača (často využívané pri Wi-Fi a Bluetooth).
+\end{itemize}
+
+
+
+Tieto metódy sú matematickým základom pre fungovanie GPS (prevažne TOA/TDOA) aj moderných systémov pre lokalizáciu v interiéroch.
+ % https://books.google.sk/books?hl=sk&lr=&id=tvCJLFLRwzcC&oi=fnd&pg=PR6&dq=geolocation+&ots=Ty6crjz0u0&sig=dV6M3WoE0CxhDM4RKgrIVi5UV0A&redir_esc=y#v=onepage&q=geolocation&f=false
+
+\subsection{Technológia QR kódov}
+QR kód (\textit{Quick Response Code}) je dvojrozmerný čiarový kód, ktorý v roku 1994 vyvinula spoločnosť Denso Wave (patriaca do skupiny Toyota). V roku 2000 bol schválený ako medzinárodný štandard ISO (ISO/IEC18004). Pôvodne bol navrhnutý pre sledovanie dielov v automobilovom priemysle, no vďaka svojej efektivite sa rozšíril do všetkých oblastí digitálnej komunikácie.
+
+\subsubsection{Kľúčové vlastnosti a štruktúra}
+QR kód sa od klasických lineárnych čiarových kódov líši niekoľkými zásadnými charakteristikami:
+\begin{itemize}
+    \item \textbf{Vysoká hustota dát:} Dokáže uchovať oveľa väčšie množstvo informácií na malej ploche (text, URL adresy, kontaktné údaje).
+    \item \textbf{Podpora znakov:} Okrem číslic a latinky podporuje aj zložitejšie znakové sady (napr. binárne dáta alebo Kanji).
+    \item \textbf{Odolnosť voči poškodeniu:} Vďaka vstavanej korekcii chýb (Reed-Solomonov kód) je možné QR kód správne prečítať, aj keď je časť jeho plochy znečistená alebo poškodená.
+    \item \textbf{Otvorený štandard:} Patent na túto technológiu bol uvoľnený pre verejnosť, čo znamená, že QR kódy môže generovať a používať ktokoľvek bezplatne.
+\end{itemize}
+
+
+
+\subsubsection{Využitie v mobilných zariadeniach}
+V súčasnosti je väčšina moderných smartfónov vybavená kamerami s natívnou podporou čítania QR kódov. Tento mechanizmus sa najčastejšie využíva na:
+\begin{itemize}
+    \item \textbf{Rýchly prístup k informáciám:} Automatické presmerovanie prehliadača na zakódovanú URL adresu.
+    \item \textbf{Bezkontaktné interakcie:} Elektronické vstupenky, platby (napr. skenovanie faktúr) alebo rýchle pripájanie k Wi-Fi sieťam.
+    \item \textbf{Autentifikáciu:} Prepojenie mobilnej aplikácie s webovým rozhraním (napr. WhatsApp Web).
+\end{itemize}
+
+(Zdroj: \url{https://www.iso.org/obp/ui/en/#iso:std:iso-iec:18004:ed-4:v1:en})
+
+
+
+\subsection{Definícia a význam odporúčacích systémov}
+S prudkým rozvojom internetových technológií a inteligentných mobilných zariadení čelí moderný používateľ fenoménu informačného preťaženia. V prostredí s takmer neobmedzeným množstvom digitálneho obsahu a služieb sa odporúčacie systémy (angl. \textit{Recommender Systems}) stali kľúčovým nástrojom na personalizovanú filtráciu informácií. 
+
+Ich primárnou úlohou je predpovedať preferencie používateľa a 
+zredukovať rozsiahly priestor dostupných položiek na úzky výber
+relevantných možností, čím sa zvyšuje celková spokojnosť 
+a efektivita interakcie s platformou. Súčasný výskum sa čoraz 
+viac orientuje na spracovanie implicitných dát. Ide o
+behaviorálne vzorce, ako sú kliknutia (\textit{click-stream}), 
+história navštívených miest či čas strávený interakciou s 
+konkrétnym objektom \cite{electronics11010141}.
+
+\subsubsection{Obsahové filtrovanie (Content-Based Filtering)}
+Tento prístup je založený na analýze špecifických atribútov položiek. Systém identifikuje vlastnosti objektov (napr. textové informácie, kategórie alebo tagy), o ktoré používateľ v minulosti prejavil záujem, a na ich základe generuje odporúčania pre podobné položky \cite{electronics11010141}.
+\begin{itemize}
+    \item \textbf{Princíp:} Analýza atribútov a metadát položiek (napr. žáner, kategória) s cieľom nájsť podobnosť s preferenciami používateľa.
+    \item \textbf{Využitie:} Efektívne najmä pri službách pracujúcich s textovými dátami, hudbou alebo e-commerce \cite{electronics11010141}.
+    \item \textbf{Limity:} Nízka miera diverzity (angl. \textit{serendipity}) – používateľovi nie sú ponúkané nové, neobjavené kategórie obsahu, čo vedie k efektu informačnej bubliny.
+\end{itemize}
+
+\subsubsection{Kolaboratívne filtrovanie (Collaborative Filtering)}
+Kolaboratívne filtrovanie predpovedá vkus používateľa na základe analýzy správania a hodnotení celej komunity používateľov (tzv. ,,wisdom of the crowd``). 
+
+\begin{itemize}
+    \item \textbf{Memory-based:} Hľadá podobnosť priamo medzi používateľmi (\textit{User-based}) alebo položkami (\textit{Item-based}) pomocou algoritmov ako KNN alebo korelačných koeficientov.
+    \item \textbf{Model-based:} Využíva pokročilé štatistické metódy a techniky strojového učenia, ako sú zhlukovanie (\textit{Clustering}), \textit{Singular Value Decomposition} (SVD) alebo \textit{Principal Component Analysis} (PCA).
+    \item \textbf{Hlavné nedostatky:} Zdroj \cite{electronics11010141} definuje tri kritické obmedzenia:
+    \begin{itemize}
+        \item \textit{Cold Start:} Problém s odporúčaním položiek pre nových používateľov bez histórie interakcií.
+        \item \textit{Sparsity (Riedkosť dát):} Situácia, keď je v systéme príliš málo hodnotení na to, aby bolo možné spoľahlivo vypočítať podobnosť.
+        \item \textit{Gray Sheep (Sivé ovce):} Používatelia s veľmi unikátnym vkusom, ktorí nevykazujú podobnosť so žiadnou väčšou skupinou používateľov, čo sťažuje generovanie odporúčaní.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Hybridné systémy}
+Hybridné modely kombinujú viaceré techniky s cieľom eliminovať slabiny jednotlivých prístupov, najmä problém riedkosti dát (\textit{sparsity}) a studeného štartu. Podľa Burkeho klasifikácie \cite{electronics11010141} existuje sedem základných metód hybridizácie, ktoré sú uvedené v tabuľke \ref{tab:hybrid_types}.
+\begin{table}[ht]
+\centering
+\caption{Typy hybridných odporúčacích systémov podľa Burkeho \cite{electronics11010141}}
+\label{tab:hybrid_types}
+\begin{tabular}{|l|p{9cm}|}
+\hline
+\textbf{Metóda} & \textbf{Princíp fungovania} \\ \hline
+Weighted & Skóre z rôznych techník sa kombinuje pomocou numerických váh. \\ \hline
+Switching & Systém prepína medzi technikami v závislosti od kontextu. \\ \hline
+Mixed & Odporúčania z viacerých zdrojov sú zobrazené súčasne. \\ \hline
+Feature Combination & Atribúty z jedného zdroja slúžia ako vstupné črty pre druhý model. \\ \hline
+Feature Augmentation & Výstup jednej techniky sa stáva parametrom pre ďalšie spracovanie. \\ \hline
+Cascade & Postupné zjemňovanie poradia (jeden systém vytvorí rebríček, druhý ho upresní). \\ \hline
+Meta-level & Celý model vygenerovaný jednou technikou slúži ako vstup pre druhú. \\ \hline
+\end{tabular}
+\end{table}
+Hlavným cieľom väčšiny štúdií zaoberajúcich sa hybridnými modelmi po roku 2010 je integrácia tzv. vedľajších informácií (\textit{side information}), ako sú sociálne väzby medzi používateľmi alebo kontextové dáta, ktoré dopĺňajú chýbajúce explicitné hodnotenia. Týmto spôsobom hybridné systémy dosahujú vyššiu presnosť a robustnosť v porovnaní so samostatnými modelmi.
+
+\subsection{Techniky spracovania dát v odporúčacích systémoch}
+Pre efektívne fungovanie vyššie spomínaných modelov sa využívajú špecifické techniky dolovania dát (Data Mining):
+
+\begin{enumerate}
+    \item \textbf{Text Mining:} Analýza neštruktúrovaných textov pomocou sémantickej analýzy a váhovania pojmov (napr. TF-IDF). Slúži na pochopenie obsahu podujatí a preferencií používateľa.
+    \item \textbf{K-Nearest Neighbor (KNN):} Algoritmus slúžiaci na klasifikáciu položiek alebo používateľov na základe ich blízkosti v metrickom priestore (geografickom alebo vkusovom).
+    \item \textbf{Clustering (Zhlukovanie):} Automatické rozdeľovanie dát do skupín so spoločnými črtami. Využíva sa najmä pri segmentácii používateľov alebo kategorizácii lokalít.
+    \item \textbf{Matrix Factorization:} Pokročilá technika rozkladu matíc, ktorá transformuje interakcie používateľov do priestoru latentných faktorov, čím rieši problém riedkosti dát (Sparsity).
+    \item \textbf{Neural Networks:} Modely hlbokého učenia schopné modelovať nelineárne vzťahy a spracovávať komplexné dáta zo sociálnych sietí či senzorov mobilných zariadení.
+\end{enumerate}
+
+%https://www.mdpi.com/2079-9292/11/1/141
+
+\subsubsection{Dizajn a používateľská skúsenosť (UX/UI)}
+
+Pri vývoji mobilnej aplikácie nie je kľúčová len funkčná stránka (backend), ale aj spôsob, akým používateľ s aplikáciou interaguje. Návrh používateľského rozhrania sa riadi dvoma základnými disciplínami:
+
+\begin{itemize}
+    \item \textbf{UX (User Experience):} Zameriava sa na celkový pocit používateľa pri používaní aplikácie. Cieľom je, aby bola aplikácia intuitívna, logicky usporiadaná a riešila potreby používateľa s minimálnym úsilím.
+    \item \textbf{UI (User Interface):} Rieši vizuálnu stránku aplikácie – farby, typografiu, ikony a rozloženie prvkov na obrazovke.
+\end{itemize}
+%geminy odpoved 29.03.2026 6:36
+
+
+\subsection{Architektonické vzory a princípy návrhu}
+Úspešná mobilná aplikácia musí byť postavená na robustnej architektúre, ktorá zaručuje jej škálovateľnosť a udržateľnosť v ekosystéme rôznych zariadení (telefóny, tablety, ChromeOS či skladacie zariadenia). Podľa oficiálnej dokumentácie spoločnosti Google je základným cieľom architektúry definovať hranice medzi jednotlivými časťami aplikácie a jasne určiť ich zodpovednosť.
+
+\subsection{Základné princípy moderného návrhu}
+Pred definovaním konkrétnych vzorov je potrebné určiť pravidlá, ktoré musí moderná architektúra spĺňať pre zachovanie stability v prostredí s obmedzenými systémovými prostriedkami:
+
+\begin{itemize}
+    \item \textbf{Separation of concerns (Oddelenie zodpovedností):} Kľúčový princíp, ktorý zakazuje sústredenie kódu v triedach \textit{Activity} alebo \textit{Fragment}. Tieto komponenty slúžia primárne ako hostitelia používateľského rozhrania, sú krátkodobé (\textit{ephemeral}) a operačný systém ich môže kedykoľvek zničiť z dôvodu nedostatku pamäte alebo zmeny konfigurácie.
+    \item \textbf{Drive UI from data models (Riadenie UI dátovými modelmi):} Používateľské rozhranie by malo byť postavené na dátových modeloch, ktoré sú nezávislé od životného cyklu UI prvkov. Perzistentné modely zabezpečujú, že aplikácia nestratí dáta pri reštarte procesu a zostáva funkčná aj pri nestabilnom pripojení k sieti.
+    \item \textbf{Single Source of Truth (SSOT - Jednotný zdroj pravdy):} Každý dátový typ má priradeného svojho vlastníka, ktorý ako jediný môže dáta modifikovať. Zmeny sa následne propagujú prostredníctvom imutabilných typov, čo znižuje výskyt chýb a uľahčuje ladenie systému.
+    \item \textbf{Unidirectional Data Flow (UDF - Jednosmerný tok dát):} Stav aplikácie prúdi smerom nadol (od SSOT k UI elementom) a udalosti/akcie prúdia smerom nahor. Tento vzor zaručuje konzistenciu dát v celom systéme.
+\end{itemize}
+
+
+
+\subsection{Porovnanie architektonických vzorov}
+V histórii vývoja platformy Android sa vyvinulo niekoľko prístupov k organizácii kódu, ktoré reagovali na narastajúcu komplexnosť aplikácií:
+
+\begin{enumerate}
+    \item \textbf{MVC (Model-View-Controller):} Tradičný model, kde Controller riadi tok dát. V Androide tento vzor zlyhával, pretože triedy \textit{Activity} preberali úlohu controllera aj view súčasne, čo viedlo k vzniku ťažko udržiavateľného kódu.
+    \item \textbf{MVP (Model-View-Presenter):} Oddelil zodpovednosť medzi View a Presenter. Problémom zostala vysoká previazanosť a nutnosť manuálneho ošetrovania životného cyklu, čo spôsobovalo úniky pamäte (\textit{memory leaks}).
+    \item \textbf{MVVM (Model-View-ViewModel):} Súčasný štandard. \textit{ViewModel} uchováva stav aplikácie nezávisle od UI komponentov, čím rieši problém s reštartovaním aktivít a stratu dát pri zmene orientácie zariadenia.
+\end{enumerate}
