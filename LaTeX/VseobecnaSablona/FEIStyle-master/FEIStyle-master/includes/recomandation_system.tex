@@ -1,0 +1,357 @@
+                                                                                                                                                                                                            
+  Pre našu eventovú aplikáciu sme zvolili \textbf{Weighted Hybrid System} --
+  váhový hybridný systém kombinujúci tri prístupy:
+
+  \begin{itemize}
+      \item \textbf{Content-Based} -- odporúčania na základe kategórií navštívených eventov
+      \item \textbf{Kontextový} -- zohľadňuje vzdialenosť, čas a popularitu
+      \item \textbf{Explicitná spätná väzba} -- bonus za eventy z obľúbených kategórií
+  \end{itemize}
+
+  Každý z týchto prístupov prispieva do výsledného skóre s nastaviteľnou váhou.
+  Používateľ si môže váhy upraviť priamo v aplikácii pomocou sliderov.
+
+  \paragraph{Prečo hybridný systém?}
+
+  \begin{enumerate}
+      \item \textbf{Máme kvalitné metadáta} -- Každý event má kategóriu, podkategóriu,
+            lokáciu, hodnotenie
+
+      \item \textbf{Menšia používateľská báza} -- Collaborative filtering potrebuje
+            veľa používateľov; na začiatku projektu ich nemáme dosť
+
+      \item \textbf{Vysvetliteľnosť} -- Vieme používateľovi povedať
+            „Odporúčame ti toto, lebo máš rád športové eventy"
+
+      \item \textbf{Flexibilita} -- Používateľ si sám nastaví čo je pre neho dôležitejšie
+            (blízkosť vs.\ kategória vs.\ popularita)
+
+      \item \textbf{Real-time výpočet} -- Skóre sa počíta za behu,
+            nepotrebujeme predpočítané modely
+  \end{enumerate}
+
+  \paragraph{Naše rozšírenie: Dvojúrovňové kategórie}
+
+  Štandardný Content-Based systém používa jednu úroveň kategórií. My používame dve:
+
+  \begin{enumerate}
+      \item \textbf{Hlavná kategória} -- Široká skupina (napr.\ \textit{Sports})
+      \item \textbf{Podkategória} -- Špecifická (napr.\ \textit{Cycling sports})
+  \end{enumerate}
+
+  Toto umožňuje presnejšie odporúčania -- používateľ, ktorý navštívil cyklistický
+  event, dostane bonus pre ďalšie cyklistické eventy, nie len všeobecne športové.
+
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+  \subsubsection{Váhy a ich význam}
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+
+  Systém používa 6 faktorov, každý s vlastnou váhou. Predvolené hodnoty sú:
+
+  \begin{lstlisting}[language=Kotlin, caption=Predvolené váhy v triede RecommendationWeights]
+  data class RecommendationWeights(
+      val mainCategory:  Float = 0.20f,  // 20 %                                                                                                                                                                                    
+      val subCategory:   Float = 0.16f,  // 16 %                                                                                                                                                                                    
+      val distance:      Float = 0.16f,  // 16 %                                                                                                                                                                                    
+      val rating:        Float = 0.16f,  // 16 %                                                                                                                                                                                    
+      val popularity:    Float = 0.16f,  // 16 %                                                                                                                                                                                    
+      val favoriteBonus: Float = 0.16f   // 16 %                                                                                                                                                                                    
+  )
+  \end{lstlisting}
+
+  Hlavná kategória má mierne vyššiu váhu (20\,\%) pretože je najspoľahlivejším
+  indikátorom záujmu používateľa.
+
+  \paragraph{Nastavovanie váh a normalizácia}
+
+  Používateľ nastavuje váhy pomocou sliderov v rozsahu 0\,--\,1.
+  Keďže súčet váh musí byť vždy rovný 1 (100\,\%), systém hodnoty automaticky
+  normalizuje:
+
+  \begin{lstlisting}[language=Kotlin, caption=Normalizácia váh]
+  fun normalized(): RecommendationWeights {
+      val sum = mainCategory + subCategory + distance +
+                rating + popularity + favoriteBonus
+      if (sum == 0f) return RecommendationWeights()
+      return RecommendationWeights(
+          mainCategory  = mainCategory  / sum,
+          subCategory   = subCategory   / sum,
+          distance      = distance      / sum,
+          rating        = rating        / sum,
+          popularity    = popularity    / sum,
+          favoriteBonus = favoriteBonus / sum
+      )
+  }
+  \end{lstlisting}
+
+  \begin{equation}
+  \sum_{i=1}^{6} w_i = 1{,}0 \quad \text{(vždy 100\,\%)}
+  \end{equation}
+
+  Napríklad ak používateľ nastaví vzdialenosť na maximum a ostatné nechá rovnaké,
+  systém proporčne zníži ostatné váhy tak aby súčet zostal 1,0.
+
+  \paragraph{Vzorec celkového skóre}
+
+  \begin{equation}
+  \boxed{
+  Score = w_1 \cdot C_{main} + w_2 \cdot C_{sub} + w_3 \cdot D +
+          w_4 \cdot R + w_5 \cdot P + w_6 \cdot B_{fav}
+  }
+  \end{equation}
+
+  Kde:
+  \begin{itemize}
+      \item $w_1 \ldots w_6$ -- Nastaviteľné váhy používateľom (súčet = 1,0)
+      \item $C_{main}$ -- Skóre hlavnej kategórie (0,0 -- 1,0)
+      \item $C_{sub}$ -- Skóre podkategórie (0,0 -- 1,0)
+      \item $D$ -- Skóre vzdialenosti (0,0 -- 1,0)
+      \item $R$ -- Skóre ratingu (0,0 -- 1,0)
+      \item $P$ -- Skóre popularity (0,0 -- 1,0)
+      \item $B_{fav}$ -- Bonus za obľúbenú kategóriu (0,0 -- 1,0)
+  \end{itemize}
+
+  Keďže každý faktor je v rozsahu 0,0\,--\,1,0 a súčet váh je vždy 1,0,
+  výsledné skóre je garantovane:
+
+  \begin{equation}
+  0{,}0 \leq Score \leq 1{,}0
+  \end{equation}
+
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+  \subsubsection{Detailný opis jednotlivých faktorov}
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+
+  \textbf{CategoryMapper} zabezpečuje previazanie medzi podkategóriami
+  a hlavnými kategóriami. Každý event patrí do jednej konkrétnej podkategórie
+  (napr.\ \textit{Ball sports}), ktorá je automaticky priradená k širšej
+  hlavnej kategórii (napr.\ \textit{Sports}).
+
+  \paragraph{Hlavná kategória ($C_{main}$)}
+
+  Systém zostaví profil používateľa z navštívených eventov -- koľko percent
+  navštívených eventov patrilo do ktorej kategórie.
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre hlavnej kategórie]
+  var mainMatch = userProfile[mainCategory] ?: 0.0
+  if (userProfile.isEmpty()) mainMatch = 0.5   // novy pouzivatel
+  else if (mainMatch == 0.0) mainMatch = 0.05  // nikdy nenavstivena
+
+  val mainScore = mainMatch * w.mainCategory
+  \end{lstlisting}
+
+  \begin{itemize}
+      \item Ak používateľ navštívil 10 eventov, z toho 4 boli „Sports"
+            $\rightarrow$ preferencia pre Sports = 40\,\% (0,4)
+      \item Pre nových používateľov (bez histórie) $\rightarrow$ $C_{main} = 0{,}5$                                                                                                                                                 
+      \item Pre nikdy nenavštívenú kategóriu $\rightarrow$ $C_{main} = 0{,}05$                                                                                                                                                      
+            (aby systém nevrátil prázdny zoznam)
+  \end{itemize}
+
+  \paragraph{Podkategória ($C_{sub}$)}
+
+  Funguje rovnako ako hlavná kategória, ale na úrovni podkategórií.
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre podkategórie]
+  val subMatch = userProfile[subCategory] ?: 0.0
+  val subScore = subMatch * w.subCategory
+  \end{lstlisting}
+
+  \paragraph{Vzdialenosť ($D$)}
+
+  Vzdialenosť sa počíta Haversinovým vzorcom a normalizuje sa tak, aby
+  bližšie eventy dostávali vyššie skóre:
+
+  \begin{equation}
+  D = \frac{1}{1 + \frac{distance}{10}}
+  \end{equation}
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre vzdialenosti]
+  val distance = haversineKm(userLat, userLng, event.latitude, event.longitude)
+  val distScore = (1.0 / (1.0 + distance / 10.0)) * w.distance
+  \end{lstlisting}
+
+  \begin{lstlisting}[language=Kotlin, caption=Haversinov vzorec]
+  private fun haversineKm(lat1: Double, lon1: Double,
+                           lat2: Double, lon2: Double): Double {
+      val r = 6371.0
+      val dLat = Math.toRadians(lat2 - lat1)
+      val dLon = Math.toRadians(lon2 - lon1)
+      val a = sin(dLat / 2).pow(2) +
+          cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+          sin(dLon / 2).pow(2)
+      return r * 2 * atan2(sqrt(a), sqrt(1 - a))
+  }
+  \end{lstlisting}
+
+  \begin{itemize}
+      \item 0\,km $\rightarrow$ skóre 1,0
+      \item 5\,km $\rightarrow$ skóre 0,67
+      \item 10\,km $\rightarrow$ skóre 0,5
+      \item 20\,km $\rightarrow$ skóre 0,33
+  \end{itemize}
+
+  \paragraph{Rating ($R$)}
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre ratingu]
+  val ratingScore = if (event.totalRatings > 0) {
+      (event.rating / 5.0) * w.rating
+  } else {
+      0.5 * w.rating  // novy event bez hodnoteni = neutralne skore
+  }
+  \end{lstlisting}
+
+  \paragraph{Popularita ($P$)}
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre popularity]
+  val maxCap = if (event.participants > 0)
+      event.participants.toDouble() else 100.0
+  val popScore = min(event.attendees.size.toDouble() / maxCap, 1.0) *
+      w.popularity
+  \end{lstlisting}
+
+  Ak má event nastavený maximálny počet účastníkov, popularita sa meria
+  voči tomuto stropu. Inak sa používa strop 100.
+
+  \paragraph{Bonus za obľúbenú kategóriu ($B_{fav}$)}
+
+  Obľúbené eventy sa \textbf{nepočítajú} do profilu preferencií --
+  používajú sa \textbf{výhradne} na tento bonus. To umožňuje používateľovi
+  explicitne označiť čo sa mu páči bez ovplyvnenia celkového profilu.
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet bonusu za obľúbenú kategóriu]
+  val favoriteSubCategories = allEvents
+      .filter { it.id in favoriteEventIds }
+      .map { it.category }
+      .toSet()
+
+  val favBonus = if (favoriteSubCategories.contains(subCategory))
+      w.favoriteBonus.toDouble() else 0.0
+  \end{lstlisting}
+
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+  \subsubsection{Reálny príklad výpočtu}
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+
+  \paragraph{Vstupné dáta}
+
+  \textbf{Používateľ:} Test User
+  \begin{itemize}
+      \item Navštívené: 8 eventov (3× Sports, 2× Food, 1× Music, 1× Business, 1× Nature)
+      \item Obľúbené: 2 eventy (oba „Cycling sports")
+      \item Lokácia: Bratislava centrum
+  \end{itemize}
+
+  \textbf{Profil preferencií:}
+  Sports 37,5\,\% $|$ Food \& Drinks 25\,\% $|$ Music 12,5\,\% $|$                                                                                                                                                                  
+  Business 12,5\,\% $|$ Nature 12,5\,\% $|$ Cycling sports 12,5\,\% (podkat.)
+
+  \textbf{Obľúbené podkategórie:} \{Cycling sports\} \quad                                                                                                                                                                          
+  \textbf{Váhy:} predvolené ($w_1{=}0{,}20$, $w_{2..6}{=}0{,}16$)
+
+  \paragraph{Event A -- Cyklistický závod}
+  Kategória: Cycling sports $\rightarrow$ Sports $|$ 5\,km $|$ Rating 4,5 $|$ 30 účastníkov
+
+  \paragraph{Event B -- Futbalový turnaj}
+  Kategória: Ball sports $\rightarrow$ Sports $|$ 3\,km $|$ Rating 4,8 $|$ 50 účastníkov
+
+  \begin{table}[H]
+  \centering                                                                                                                                                                                                                        
+  \begin{tabular}{|l|c|c|c|}
+  \hline                                                                                                                                                                                                                            
+  \textbf{Faktor} & \textbf{Hodnota} & \textbf{Výpočet} & \textbf{Skóre} \\                                                                                                                                                         
+  \hline                                                                                                                                                                                                                            
+  Hlavná kategória & 37,5\,\% & $0{,}375 \times 0{,}20$ & 0,0750 \\                                                                                                                                                                 
+  \hline                                                                                                                                                                                                                            
+  Podkategória & 12,5\,\% & $0{,}125 \times 0{,}16$ & 0,0200 \\                                                                                                                                                                     
+  \hline                                                                                                                                                                                                                            
+  Vzdialenosť & 5\,km & $\frac{1}{1+0{,}5} \times 0{,}16$ & 0,1067 \\                                                                                                                                                               
+  \hline                                                                                                                                                                                                                            
+  Rating & 4,5/5 & $0{,}90 \times 0{,}16$ & 0,1440 \\                                                                                                                                                                               
+  \hline                                                                                                                                                                                                                            
+  Popularita & 30/100 & $0{,}30 \times 0{,}16$ & 0,0480 \\                                                                                                                                                                          
+  \hline                                                                                                                                                                                                                            
+  Obľúbené bonus & ÁNO & $1{,}0 \times 0{,}16$ & \textbf{0,1600} \\                                                                                                                                                                 
+  \hline                                                                                                                                                                                                                            
+  \textbf{CELKOM} & & & \textbf{0,554 (55,4\,\%)} \\                                                                                                                                                                                
+  \hline                                                                                                                                                                                                                            
+  \end{tabular}
+  \caption{Výpočet skóre pre Event A (Cyklistický závod)}
+  \end{table}
+
+  \begin{table}[H]
+  \centering                                                                                                                                                                                                                        
+  \begin{tabular}{|l|c|c|c|}
+  \hline                                                                                                                                                                                                                            
+  \textbf{Faktor} & \textbf{Hodnota} & \textbf{Výpočet} & \textbf{Skóre} \\                                                                                                                                                         
+  \hline                                                                                                                                                                                                                            
+  Hlavná kategória & 37,5\,\% & $0{,}375 \times 0{,}20$ & 0,0750 \\                                                                                                                                                                 
+  \hline                                                                                                                                                                                                                            
+  Podkategória & 0\,\% & $0{,}0 \times 0{,}16$ & 0,0000 \\                                                                                                                                                                          
+  \hline                                                                                                                                                                                                                            
+  Vzdialenosť & 3\,km & $\frac{1}{1+0{,}3} \times 0{,}16$ & 0,1231 \\                                                                                                                                                               
+  \hline                                                                                                                                                                                                                            
+  Rating & 4,8/5 & $0{,}96 \times 0{,}16$ & 0,1536 \\                                                                                                                                                                               
+  \hline                                                                                                                                                                                                                            
+  Popularita & 50/100 & $0{,}50 \times 0{,}16$ & 0,0800 \\                                                                                                                                                                          
+  \hline                                                                                                                                                                                                                            
+  Obľúbené bonus & NIE & $0$ & 0,0000 \\                                                                                                                                                                                            
+  \hline                                                                                                                                                                                                                            
+  \textbf{CELKOM} & & & \textbf{0,432 (43,2\,\%)} \\                                                                                                                                                                                
+  \hline                                                                                                                                                                                                                            
+  \end{tabular}
+  \caption{Výpočet skóre pre Event B (Futbalový turnaj)}
+  \end{table}
+
+  \begin{table}[H]
+  \centering                                                                                                                                                                                                                        
+  \begin{tabular}{|c|l|l|c|}
+  \hline                                                                                                                                                                                                                            
+  \textbf{\#} & \textbf{Event} & \textbf{Prečo vyhral} & \textbf{Skóre} \\                                                                                                                                                          
+  \hline                                                                                                                                                                                                                            
+  1 & Cyklistický závod & Podkategória + Obľúbené bonus & \textbf{55,4\,\%} \\                                                                                                                                                      
+  \hline                                                                                                                                                                                                                            
+  2 & Futbalový turnaj & Len hlavná kategória & 43,2\,\% \\                                                                                                                                                                         
+  \hline                                                                                                                                                                                                                            
+  \end{tabular}
+  \caption{Porovnanie výsledkov}
+  \end{table}
+
+  Event A vyhráva napriek väčšej vzdialenosti a nižšiemu ratingu vďaka
+  zhode v podkategórii (+2,0\,\%) a bonusu za obľúbené (+16,0\,\%).
+
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+  \subsubsection{Zhrnutie}
+  % ═══════════════════════════════════════════════════════════════════════════════                                                                                                                                                 
+
+  \paragraph{Kľúčové vlastnosti systému}
+
+  \begin{enumerate}
+      \item \textbf{Weighted Hybrid System} -- Kombinácia content-based,
+            kontextového a explicitného prístupu s nastaviteľnými váhami
+
+      \item \textbf{Dvojúrovňové kategórie} -- Hlavná kategória (Sports) +
+            podkategória (Cycling sports) pre presnejšie odporúčania
+
+      \item \textbf{Oddelené zdroje dát}:
+      \begin{itemize}
+          \item Navštívené eventy $\rightarrow$ stavajú profil preferencií
+          \item Obľúbené eventy $\rightarrow$ poskytujú explicitný bonus
+      \end{itemize}
+
+      \item \textbf{Používateľsky konfigurovateľné váhy} -- Slidery
+            v aplikácii umožňujú prispôsobiť dôležitosť každého faktora;
+            systém hodnoty automaticky normalizuje na súčet 1,0
+
+      \item \textbf{Real-time výpočet} -- Skóre sa prepočíta okamžite
+            po zmene váh, bez nutnosti predpočítaných modelov
+  \end{enumerate}
+
+  \paragraph{Možné vylepšenia do budúcnosti}
+
+  \begin{itemize}
+      \item Pridať časový kontext (ráno/večer, pracovný deň/víkend)
+      \item Implementovať collaborative filtering pri väčšej používateľskej báze
+      \item A/B testovanie rôznych predvolených váh
+      \item Strojové učenie pre automatické ladenie váh
+  \end{itemize}

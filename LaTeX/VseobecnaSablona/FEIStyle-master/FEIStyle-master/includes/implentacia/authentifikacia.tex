@@ -1,0 +1,82 @@
+\subsubsection{Autentifikácia a správa používateľov}
+
+Autentifikačný proces v aplikácii je postavený na službe \textit{Firebase Authentication}.
+Systém podporuje prihlásenie prostredníctvom e-mailu a hesla, ako aj integráciu s účtom
+Google. Implementácia striktne dodržiava architektúru \textbf{MVVM} (Model-View-ViewModel),
+čím oddeľuje logiku volania API od používateľského rozhrania.
+
+\paragraph{Architektonické rozdelenie:}
+\begin{itemize}
+    \item \textbf{AuthService:} Dátová vrstva, ktorá priamo komunikuje s Firebase SDK
+          (metódy ako \texttt{signInWithEmailAndPassword} alebo
+          \texttt{createUserWithEmailAndPassword}).
+    \item \textbf{UseCases} (napr. \texttt{LoginUserUseCase}): Doménová vrstva, ktorá
+          zapuzdruje biznis logiku a pripravuje dáta pre ViewModel.
+    \item \textbf{ViewModels} (\texttt{LoginViewModel}, \texttt{RegisterViewModel}):
+          Prezentačná vrstva, ktorá spravuje stav používateľského rozhrania
+          (indikátor načítavania \texttt{isLoading}, chybové hlásenia).
+    \item \textbf{LoginScreen:} UI vrstva vytvorená pomocou Jetpack Compose.
+\end{itemize}
+
+\paragraph{Implementácia kľúčových funkcií:}
+Služba \texttt{AuthService} využíva asynchrónne volania pomocou Kotlin korutín.
+Registrácia nového používateľa zahŕňa nielen vytvorenie účtu, ale aj okamžitú
+aktualizáciu profilu o zobrazované meno (\textit{displayName}):
+
+\begin{lstlisting}[language=Kotlin, caption=Registrácia používateľa v AuthService]
+suspend fun registerWithEmail(
+    email: String,
+    password: String,
+    displayName: String
+): FirebaseUser? {
+    val credential = auth.createUserWithEmailAndPassword(email, password).await()
+    credential.user?.updateProfile(
+        userProfileChangeRequest { this.displayName = displayName }
+    )?.await()
+    return credential.user
+}
+\end{lstlisting}
+
+Prihlásenie cez Google účet prebieha prostredníctvom \texttt{GoogleSignInClient},
+pričom po získaní \texttt{idToken} sa volá \texttt{firebaseAuthWithGoogle}:
+
+\begin{lstlisting}[language=Kotlin, caption=Prihlásenie cez Google v AuthService]
+suspend fun firebaseAuthWithGoogle(idToken: String): FirebaseUser? {
+    val credential = GoogleAuthProvider.getCredential(idToken, null)
+    val result = auth.signInWithCredential(credential).await()
+    return result.user
+}
+\end{lstlisting}
+
+alebo normálne prihlásenie pomocou e-mailu a hesla:
+
+\begin{lstlisting}[language=Kotlin, caption=Prihlásenie pomocou e-mailu a hesla]
+suspend fun signInWithEmail(email: String, password: String) {
+    auth.signInWithEmailAndPassword(email, password).await()
+}
+\end{lstlisting}
+
+\paragraph{Validácia vstupných údajov:}
+Pred odoslaním požiadavky na server aplikácia vykonáva lokálnu validáciu na strane
+klienta, čím šetrí sieťovú prevádzku a zlepšuje odozvu rozhrania. Kontroluje sa:
+\begin{itemize}
+    \item Formát e-mailovej adresy (prítomnosť znaku \texttt{@}).
+    \item Komplexnosť hesla — minimálna dĺžka 6 znakov, aspoň jedno veľké písmeno
+          a aspoň jeden špeciálny znak.
+    \item Zhoda hesla s jeho potvrdením pri registrácii.
+\end{itemize}
+
+\begin{lstlisting}[language=Kotlin, caption=Validácia hesla v RegisterViewModel]
+passwordError = when {
+    password.length < 6              -> "Heslo musi mat aspon 6 znakov."
+    !password.any { it.isUpperCase() } -> "Heslo musi obsahovat aspon jedno velke pismeno."
+    !password.any { !it.isLetterOrDigit() } -> "Heslo musi obsahovat aspon jeden specialny znak."
+    else -> null
+}
+\end{lstlisting}
+
+\paragraph{Bezpečnostné obmedzenia a banovanie:}
+Nad rámec štandardnej autentifikácie aplikácia implementuje kontrolu stavu
+používateľa. Pri každom prihlásení sa overuje atribút \texttt{banned}
+v dokumente používateľa v databáze Firestore. V prípade, že je používateľ
+zablokovaný, aplikácia ho okamžite odhlási a zamedzí prístup k chránenému obsahu.

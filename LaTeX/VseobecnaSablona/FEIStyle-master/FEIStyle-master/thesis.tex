@@ -45,6 +45,23 @@
 \usepackage{array}
 \usepackage{amssymb}
 
+% Definícia jazyka Kotlin pre balík listings
+\lstdefinelanguage{Kotlin}{
+  keywords={as, as?, break, class, continue, do, else, false, for, fun, if, in,
+    interface, is, null, object, package, return, super, this, throw, true, try,
+    typealias, typeof, val, var, when, while, by, catch, constructor, delegate,
+    dynamic, field, file, finally, get, import, init, param, property, receiver,
+    set, setparam, where, actual, abstract, annotation, companion, data, enum,
+    expect, external, final, infix, inline, inner, internal, lateinit, noinline,
+    open, operator, out, override, private, protected, public, reified, sealed,
+    suspend, tailrec, vararg},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[s]{"""}{"""},
+  sensitive=true
+}
+
 % Farby pre výpisy kódu
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}

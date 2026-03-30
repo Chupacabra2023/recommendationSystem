@@ -163,6 +163,35 @@ Voľba tejto platformy pre účely mojej práce vychádza z jej schopnosti rieš
 \subsection{Firebase Authentication}
 Firebase Authentication poskytuje backendové služby, ľahko použiteľné súpravy SDK a hotové knižnice používateľského rozhrania na autentifikáciu používateľov v aplikácii. Podporuje overovanie pomocou hesiel, telefónnych čísiel a populárnych poskytovateľov identít (Google, Facebook, Twitter). Služba využíva moderné priemyselné štandardy ako \textit{OAuth 2.0} a \textit{OpenID Connect}, pričom zabezpečuje kompletnú správu relácií a overovanie e-mailových adries.
 % Zdroj: \url{https://firebase.google.com/docs/auth}
+\subsubsection{Mechanizmus fungovania a správa tokenov}
+Proces autentifikácie vo Firebase Authentication je založený na výmene a overovaní tokenov, čo zabezpečuje bezstavovú komunikáciu medzi klientom a backendom. Celý proces prebieha v niekoľkých krokoch:
+
+\begin{itemize}
+    \item \textbf{Prihlásenie a vytvorenie ID tokenu:} Po úspešnom overení identity (napr. zadaním hesla) Firebase servery vygenerujú \textit{Firebase ID Token}. Ide o \textit{JSON Web Token} (JWT), ktorý obsahuje informácie o identite používateľa (UID, e-mail, čas prihlásenia). Tento token je krátkodobý a jeho platnosť je štandardne 1 hodina.
+    
+    \item \textbf{Refresh Token:} Súčasne s ID tokenom klient dostane aj \textit{Refresh Token}. Na rozdiel od ID tokenu, refresh token má dlhú platnosť. Firebase SDK ho automaticky ukladá do lokálneho úložiska prehliadača alebo zariadenia a používa ho na automatické získanie nového ID tokenu po vypršaní toho starého, čím zabezpečuje, že používateľ nemusí opakovane zadávať prihlasovacie údaje.
+    
+    \item \textbf{Autorizácia požiadaviek:} Pri každej požiadavke na chránené zdroje (napr. Cloud Firestore alebo vlastný backend) klientska aplikácia pripojí aktuálny ID token do hlavičky požiadavky. Prijímajúca strana následne overí integritu a platnosť tohto tokenu pomocou verejných kľúčov Google.
+    
+    \item \textbf{Bezpečnostné pravidlá:} Identita extrahovaná z tokenu je priamo dostupná v bezpečnostných pravidlách Firebase (\textit{Security Rules}), čo umožňuje jednoducho definovať prístupové práva na úrovni jednotlivých používateľov (napr. \texttt{request.auth.uid == userId}).
+\end{itemize}
+https://firebase.google.com/docs/auth
+\subsubsection{Prepojenie s Cloud Firestore a dokument users/\{uid\}}
+Hoci Firebase Authentication spravuje prihlasovacie údaje, neukladá dodatočné informácie o používateľovi (napr. adresu, telefónne číslo, preferencie alebo rolu v systéme). Na tento účel sa v kombinácii s autentifikáciou využíva databáza \textit{Cloud Firestore}.
+
+\begin{itemize}
+    \item \textbf{Identifikátor UID:} Každý používateľ po registrácii získa unikátny identifikátor (\textit{Unique Identifier - UID}). Tento kľúč je nemenný a slúži ako most medzi autentifikačnou službou a databázou.
+    \item \textbf{Dokument users/\{uid\}:} Bežným architektonickým vzorom je vytvorenie kolekcie s názvom \texttt{users}, kde názov každého dokumentu zodpovedá konkrétnemu \texttt{uid} používateľa. Týmto spôsobom je zabezpečené, že každý prihlásený používateľ má priradený práve jeden profilový dokument.
+    \item \textbf{Bezpečnostná integrácia:} Vďaka tomu, že sa názov dokumentu zhoduje s \texttt{uid}, je možné v \textit{Firestore Security Rules} jednoducho definovať prístup:
+    \begin{verbatim}
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    \end{verbatim}
+    Tento zápis zabezpečí, že k dokumentu v ceste \texttt{users/123} sa dostane výhradne používateľ, ktorého \texttt{uid} je \texttt{123}.
+\end{itemize}
+
+
 
 \subsection{Firebase Firestore}
 Cloud Firestore je flexibilná, škálovateľná NoSQL databáza určená pre mobilný a webový vývoj. Udržiava dáta synchronizované medzi klientskymi aplikáciami prostredníctvom reaktívnych poslucháčov (\textit{realtime listeners}). 
@@ -177,3 +206,126 @@ Cloud Storage pre Firebase je výkonná a nákladovo efektívna služba určená
 % Zdroj: \url{https://firebase.google.com/docs/storage}
 
 
+\subsection{Technológia QR kódov}
+Existuje nekonenečne veľa spôsobov ako overiť vstup od podujatie, jedno z najefektívnejších je využitie QR kódov.
+QR kód (\textit{Quick Response Code}) je dvojrozmerný čiarový kód, ktorý v roku 1994 vyvinula spoločnosť Denso Wave (patriaca do skupiny Toyota). V roku 2000 bol schválený ako medzinárodný štandard ISO (ISO/IEC18004). Pôvodne bol navrhnutý pre sledovanie dielov v automobilovom priemysle, no vďaka svojej efektivite sa rozšíril do všetkých oblastí digitálnej komunikácie.
+
+\subsubsection{Kľúčové vlastnosti a štruktúra}
+QR kód sa od klasických lineárnych čiarových kódov líši niekoľkými zásadnými charakteristikami:
+\begin{itemize}
+    \item \textbf{Vysoká hustota dát:} Dokáže uchovať oveľa väčšie množstvo informácií na malej ploche (text, URL adresy, kontaktné údaje).
+    \item \textbf{Podpora znakov:} Okrem číslic a latinky podporuje aj zložitejšie znakové sady (napr. binárne dáta alebo Kanji).
+    \item \textbf{Odolnosť voči poškodeniu:} Vďaka vstavanej korekcii chýb (Reed-Solomonov kód) je možné QR kód správne prečítať, aj keď je časť jeho plochy znečistená alebo poškodená.
+    \item \textbf{Otvorený štandard:} Patent na túto technológiu bol uvoľnený pre verejnosť, čo znamená, že QR kódy môže generovať a používať ktokoľvek bezplatne.
+\end{itemize}
+
+\subsubsection{Využitie v mobilných zariadeniach}
+V súčasnosti je väčšina moderných smartfónov vybavená kamerami s natívnou podporou čítania QR kódov. Tento mechanizmus sa najčastejšie využíva na:
+\begin{itemize}
+    \item \textbf{Rýchly prístup k informáciám:} Automatické presmerovanie prehliadača na zakódovanú URL adresu.
+    \item \textbf{Bezkontaktné interakcie:} Elektronické vstupenky, platby (napr. skenovanie faktúr) alebo rýchle pripájanie k Wi-Fi sieťam.
+    \item \textbf{Autentifikáciu:} Prepojenie mobilnej aplikácie s webovým rozhraním (napr. WhatsApp Web).
+\end{itemize}
+(Zdroj: \url{https://www.iso.org/obp/ui/en/#iso:std:iso-iec:18004:ed-4:v1:en})
+
+\paragraph{ZXing Core (3.5.3)}
+\textit{ZXing} (skratka pre „Zebra Crossing“) je široko používaná open-source knižnica na prácu s čiarovými kódmi \cite{zxing_repo}. V rámci aplikácie sa využíva jej jadro (\textit{Core}) na \textbf{generovanie QR kódov}. 
+\begin{itemize}
+    \item \textbf{Proces:} Knižnica transformuje unikátny identifikačný reťazec (token) z databázy do matice bitov (\textit{BitMatrix}), ktorá je následne vykreslená ako bitmapový obrázok na displeji zariadenia.
+    \item \textbf{Konfigurácia:} Umožňuje presné nastavenie kódovania (UTF-8) a úrovne korekcie chýb, čo zabezpečuje čitateľnosť kódu aj pri nižšom jase displeja.
+\end{itemize}
+https://github.com/zxing/zxing
+
+\paragraph{ML Kit Barcode Scanning (17.3.0)}
+Pre reverzný proces – dekódovanie QR kódu – bola zvolená moderná knižnica od spoločnosti Google v rámci sady \textit{ML Kit} \cite{mlkit_barcode}. Na rozdiel od starších knižníc využíva modely \textbf{strojového učenia} na detekciu kódov v reálnom čase.
+\begin{itemize}
+    \item \textbf{Výkon:} Algoritmus dokáže identifikovať a dekódovať QR kód takmer okamžite, a to aj v prípade, že je kód naklonený, rozmazaný alebo sa nachádza v pohybe.
+    \item \textbf{Integrácia:} Knižnica úzko spolupracuje s rozhraním \textit{CameraX}, kde spracováva prúd obrazových dát (\textit{Image Analysis}) a v prípade nálezu kódu vráti jeho textovú hodnotu pre ďalšiu validáciu voči systému Firebase.
+\end{itemize}
+https://developers.google.com/ml-kit/vision/barcode-scanning
+
+
+
+\subsection{Cloudová infraštruktúra a Google Maps Platform}
+Aplikácia využíva služby \textbf{Google Cloud Platform (GCP)}, čo je komplexný súbor cloudových služieb poskytovaných spoločnosťou Google. GCP umožňuje vývojárom a podnikom prevádzkovať aplikácie na bezpečnej, vysoko výkonnej a škálovateľnej infraštruktúre, ktorá je identická s tou, ktorú Google používa pre svoje vlastné produkty.
+https://www.geeksforgeeks.org/devops/google-cloud-platform-gcp/
+
+\subsubsection{Globálna infraštruktúra: Regióny a Zóny}
+Pre zabezpečenie nízkej latencie a vysokej dostupnosti geolokačných dát (máp a miest) využíva GCP hierarchickú štruktúru dátových centier:
+\begin{itemize}
+    \item \textbf{Zóny (Zones):} Predstavujú základnú úroveň, kde sú nasadené výpočtové prostriedky a úložiská. Hoci sa zóna často vizualizuje ako dátové centrum, v skutočnosti môže zahŕňať viacero fyzických budov so spoločným sieťovým prepojením.
+    \item \textbf{Regióny (Regions):} Sú nezávislé geografické oblasti (napr. \textit{europe-west2}), ktoré zoskupujú viacero zón. Latencia medzi zónami v rámci jedného regiónu je spravidla pod 5 milisekúnd.
+    \item \textbf{Multi-Region:} Vybrané služby (napr. Google Cloud Storage) podporujú ukladanie dát redundantne v minimálne dvoch geografických lokalitách vzdialených aspoň 160 km, čo zabezpečuje odolnosť voči rozsiahlym prírodným katastrofám.
+\end{itemize}
+Využitie tejto infraštruktúry zaručuje, že mapové podklady v aplikácii sú načítavané z najbližšieho možného uzla, čo minimalizuje odozvu pri interakcii používateľa s mapou.
+
+https://www.geeksforgeeks.org/devops/google-cloud-platform-gcp/
+
+\paragraph{Maps SDK for Android}
+\textit{Maps SDK for Android} umožňuje pridávať mapové podklady do aplikácie (vrátane Wear OS) s využitím údajov Google Maps, zobrazenia máp a reakcií na gestá. SDK poskytuje nástroje na vkladanie doplňujúcich informácií o polohách a podporuje interakciu používateľa prostredníctvom značiek (\textit{Markers}), polygónov a iných prekrytí (\textit{Overlays}). 
+
+Platforma plne podporuje programovacie jazyky Kotlin a Java, pričom poskytuje dodatočné knižnice a rozšírenia pre pokročilé funkcie a moderné programovacie techniky.
+% Zdroj: https://developers.google.com/maps/documentation/android-sdk/overview?section=start
+
+\paragraph{Places SDK for Android}
+\textit{Places SDK for Android} umožňuje vytvárať aplikácie, ktoré kontextuálne reagujú na okolité podniky a iné miesta v blízkosti zariadenia. Tento nástroj dopĺňa základné geografické služby systému Android o bohatú databázu miest, ktoré majú pre používateľa konkrétny význam.
+
+Kľúčové funkcie a rozhrania zahŕňajú:
+\begin{itemize}
+    \item \textbf{Programový prístup k databáze:} SDK poskytuje prístup k informáciám o miestnych podnikoch, bodoch záujmu a aktuálnej polohe zariadenia.
+    \item \textbf{Autocomplete:} Ponúka predpripravené komponenty (\textit{Widgets}) na predpovedanie názvov miest v reakcii na vyhľadávacie dopyty používateľa.
+    \item \textbf{Definícia miesta (\textit{Place}):} Miesto je v rámci API reprezentované rozhraním \textit{Place}. Definujeme ho ako fyzický priestor s názvom (napr. firmy, pamiatky, geografické polohy). Objekt \textit{Place} obsahuje údaje ako názov, adresa, ID miesta, geografická poloha, telefónne číslo, typ miesta či webová adresa.
+\end{itemize}
+Podobne ako Maps SDK, aj tento nástroj plne podporuje jazyky Kotlin a Java vrátane rozšírení pre pokročilý vývoj.
+% Zdroj: https://developers.google.com/maps/documentation/places/android-sdk/overview
+
+\paragraph{Google Sign-In}
+Tento komponent spravuje autentifikačný tok \textit{OAuth 2.0} a životný cyklus prístupových tokenov. Integruje prihlasovanie pomocou Google účtu, čím zjednodušuje overovanie identity používateľa a umožňuje bezpečnú komunikáciu s ostatnými Google rozhraniami (API) bez nutnosti manuálnej správy prihlasovacích údajov.
+% Zdroj: https://developers.google.com/identity/sign-in/web/sign-in
+
+\paragraph{Google Location Services}
+Knižnica \texttt{play-services-location} je súčasťou služieb Google Play a poskytuje vysoko presné a energeticky efektívne sledovanie polohy zariadenia. V aplikácii sa využíva na získanie aktuálnych súradníc používateľa, čo je kľúčové pre funkcie ako zobrazovanie najbližších podujatí alebo navigáciu k miestu konania.
+% Zdroj: https://developer.android.com/develop/sensors-and-location/location
+
+\paragraph{Google Location Services}
+Knižnica \texttt{play-services-location} je kľúčovou súčasťou služieb Google Play, ktorá poskytuje rozhrania pre prácu s polohou zariadenia. V projekte sa využíva najmä \textit{Fused Location Provider API}, ktoré inteligentne kombinuje dáta z GPS, Wi-Fi sietí a mobilných vysielačov.
+%geminy 29.03.2026 what is play-services-location Android
+
+\paragraph{Konfigurácia a bezpečnosť rozhraní}
+Prepojenie aplikácie s cloudovou infraštruktúrou je realizované prostredníctvom konfiguračného súboru \texttt{google-services.json} a unikátnych API kľúčov. Bezpečnosť týchto rozhraní je zabezpečená na dvoch úrovniach:
+\begin{itemize}
+    \item \textbf{Technické obmedzenia:} Prístup k API je v \textit{Google Cloud Console} striktne obmedzený na balík aplikácie (\textit{Package Name}) a unikátny \textbf{SHA-1 odtlačok} podpisového certifikátu vývojára.
+    \item \textbf{Separácia citlivých údajov:} API kľúče sú uložené mimo zdrojového kódu v súbore \texttt{local.properties}, ktorý je ignorovaný systémom správy verzií, a do projektu sú načítavané pomocou nástroja \textit{Secrets Gradle Plugin}.
+\end{itemize}
+
+\subsection{Cloudinary – správa digitálnych aktív}
+Pre efektívnu správu, optimalizáciu a doručovanie vizuálneho obsahu (obrázky podujatí, logá, profilové fotografie) bola do projektu integrovaná platforma \textbf{Cloudinary}. Ide o moderný systém správy digitálnych aktív (DAM – \textit{Digital Asset Management}), ktorý využíva umelú inteligenciu a pokročilé algoritmy na spracovanie obrazu \cite{cloudinary_blog}.
+
+\subsubsection{Kľúčové výhody a funkcie}
+Cloudinary poskytuje nástroje, ktoré presahujú možnosti bežného cloudového úložiska:
+\begin{itemize}
+    \item \textbf{Automatická optimalizácia:} Systém pomocou AI automaticky upravuje formát, kvalitu a rozlíšenie obrázkov v reálnom čase podľa zariadenia používateľa, čo výrazne znižuje spotrebu dát a zrýchľuje načítavanie aplikácie.
+    \item \textbf{Dynamické transformácie:} Umožňuje vykonávať úpravy (orezanie na štvorec, zmena veľkosti, pridanie vodoznaku) priamo prostredníctvom úpravy URL adresy obrázka, bez nutnosti manuálneho generovania viacerých verzií súborov.
+    \item \textbf{Škálovateľnosť:} Infraštruktúra je navrhnutá tak, aby bezchybne doručovala vizuálny obsah vo veľkom meradle (\textit{at scale}) pri zachovaní vysokej rýchlosti odozvy.
+\end{itemize}
+
+\subsubsection{Porovnanie s Firebase Storage a ekonomické hľadisko}
+Hoci ekosystém Firebase, využívaný v tejto práci, ponúka vlastnú službu \textit{Firebase Storage}, pre účely správy obrázkov bola zvolená platforma Cloudinary z nasledujúcich dôvodov:
+\begin{enumerate}
+    \item \textbf{Nákladová efektivita:} Firebase Storage uplatňuje striktné limity na prenos dát a ukladanie v bezplatnom balíku (\textit{Spark Plan}), pričom pokročilé funkcie spracovania obrazu sú často spojené s dodatočnými nákladmi v rámci plateného programu \textit{Blaze}. Cloudinary ponúka robustný bezplatný program, ktorý zahŕňa komplexné AI transformácie bez nutnosti okamžitých investícií.
+    \item \textbf{Absencia natívnej manipulácie:} Firebase Storage slúži primárne ako „pasívne“ úložisko súborov. Na dosiahnutie funkcií, ktoré má Cloudinary natívne (napr. zmena veľkosti na strane servera), by bolo vo Firebase potrebné implementovať a platiť za \textit{Cloud Functions}, čo by zvýšilo komplexnosť aj cenu riešenia.
+\end{enumerate}
+% Zdroj: https://cloudinary.com/blog/three_key_benefits_of_modern_digital_asset_management
+
+\subsection{Návrh a evolúcia algoritmu odporúčania}
+Pôvodný návrh systému sa spoliehal výhradne na metódu filtrovania založeného na obsahu (\textit{Content-based filtering}). Táto metóda predpokladala, že budúci záujem používateľa je priamo úmerný jeho historickej interakcii s konkrétnymi kategóriami podujatí. 
+
+\paragraph{Prechod na hybridný model}
+Počas vývoja a testovania sa ukázalo, že čisto historické dáta nemusia reflektovať aktuálny zámer používateľa (napríklad ak používateľ v minulosti navštevoval športové podujatia, ale momentálne hľadá kultúrny program). Z tohto dôvodu sme prešli na \textbf{váhový hybridný systém (Weighted Hybrid System)}, ktorý kombinuje:
+\begin{itemize}
+    \item \textbf{Implicitné dáta:} História navštívených podujatí a automaticky generovaný profil preferencií.
+    \item \textbf{Explicitné dáta:} Priame nastavenie preferencií používateľom v reálnom čase pomocou váhových koeficientov (slidery).
+\end{itemize}
+
+\paragraph{Zdôvodnenie voľby}
+Hlavným argumentom pre túto zmenu bola skutočnosť, že podujatia (\textit{eventy}) obsahujú fixné atribúty (kategória, podkategória, poloha), ktoré existujú nezávisle od histórie používateľa. Hybridný systém umožňuje tieto fixné atribúty dynamicky prepojiť s aktuálnou potrebou používateľa, čím sa eliminuje problém „informačnej bubliny“, do ktorej by čistý \textit{Content-based} systém používateľa uzatvoril.

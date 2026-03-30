@@ -1,0 +1,49 @@
+\subsection{Implementácia mapového modulu a geolokalizácie}
+
+Ako základ pre mapu je použitá knižnica \textit{Google Maps SDK}, ktorá poskytuje všetky potrebné funkcionality pre prácu s geografickými dátami. Používateľ na hlavnej obrazovke vidí interaktívnu mapu, na ktorej sú jednotlivé udalosti zobrazené vo forme markerov.
+
+\paragraph{Zobrazenie mapy a integrácia s Compose}
+Keďže \texttt{MapView} nie je natívny komponent prostredia \textit{Jetpack Compose}, v aplikácii je využitý \texttt{AndroidView}, ktorý slúži ako most (\textit{bridge}) medzi klasickým \textit{Android View} systémom a \textit{Compose UI}. Mapa sa pri prvotnom načítaní predvolene centruje na súradnice Bratislavy.
+
+\begin{lstlisting}[language=Kotlin, caption=Inicializácia MapView v prostredí Compose]
+val mapView = remember { MapView(context).also { it.onCreate(null) } }
+
+AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize()) { mv ->
+    mv.getMapAsync { map ->
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(BRATISLAVA, 13f))
+    }
+}
+\end{lstlisting}
+
+\texttt{MapView} disponuje vlastným životným cyklom, ktorý je potrebné manuálne prepojiť s životným cyklom obrazovky pomocou \texttt{DisposableEffect}. Tým sa zabezpečí, že mapa správne reaguje na udalosti ako \textit{onPause}, \textit{onResume} a \textit{onDestroy}.
+
+\paragraph{GPS poloha a správa oprávnení}
+Aplikácia vyžaduje oprávnenie \texttt{ACCESS\_FINE\_LOCATION}, po ktorého udelení získa poslednú známu polohu zariadenia pomocou \texttt{FusedLocationProviderClient}. Kamera mapy sa presunie na polohu používateľa iba raz pri inicializácii. Tento stav je riadený príznakom \texttt{mapMovedToUser} v \texttt{AppViewModel}, čím sa zabraňuje nežiaducemu a opakovanému presunu kamery pri každej rekomponzícii rozhrania.
+
+\begin{lstlisting}[language=Kotlin, caption=Získanie aktuálnej polohy používateľa]
+LocationServices.getFusedLocationProviderClient(context)
+    .lastLocation
+    .addOnSuccessListener { loc ->
+        userLocation = LatLng(loc.latitude, loc.longitude)
+        appViewModel.updateUserLocation(loc.latitude, loc.longitude)
+    }
+\end{lstlisting}
+
+\paragraph{Práca s markermi a interakcia}
+Všetky udalosti sú konvertované na objekty \texttt{MarkerOptions} pomocou metódy \texttt{toMarkerOptions()}, ktorá je definovaná priamo v dátovom modeli \texttt{Event}.
+
+\begin{lstlisting}[language=Kotlin, caption=Konverzia modelu Event na MarkerOptions]
+fun toMarkerOptions(icon: BitmapDescriptor? = null): MarkerOptions =
+    MarkerOptions()
+        .position(LatLng(latitude, longitude))
+        .title(title)
+        .apply { icon?.let { icon(it) } }
+\end{lstlisting}
+
+Zobrazované markery sú synchronizované so stavom \texttt{appViewModel.events} prostredníctvom \texttt{snapshotFlow}. Pri každej zmene zoznamu udalostí sa mapa reaktívne aktualizuje a pridá nové body s vlastným grafickým vizuálom (čierny pin). Do vlastnosti \texttt{tag} každého markera sa ukladá unikátne \texttt{event.id}, čo umožňuje presnú identifikáciu udalosti pri interakcii. Po kliknutí na marker aplikácia identifikuje udalosť a naviguje používateľa na obrazovku s detailom.
+
+\paragraph{Okruh pôsobnosti a filtrovanie}
+Pre lepšiu prehľadnosť aplikácia filtruje udalosti na základe ich vzdialenosti od používateľa. Markery nachádzajúce sa mimo nastaveného okruhu sú automaticky skryté (\texttt{marker.isVisible = false}). Tento okruh je na mape vizualizovaný ako žltý polopriesvitný kruh (\textit{Circle}), ktorého polomer je prepojený s nastaveniami v \texttt{AppViewModel}.
+
+\paragraph{Personalizácia zobrazenia}
+Používateľ má možnosť prepínať medzi piatimi štýlmi mapového podkladu: \textit{NORMAL, SATELLITE, HYBRID, TERRAIN} a špeciálnym \textit{DARK} režimom, ktorý využíva vlastnú definíciu štýlu vo formáte JSON.

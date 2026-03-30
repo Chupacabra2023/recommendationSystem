@@ -193,29 +193,8 @@ Na výpočet presnej polohy zariadenia zo získaných signálov (rádiových, sa
 Tieto metódy sú matematickým základom pre fungovanie GPS (prevažne TOA/TDOA) aj moderných systémov pre lokalizáciu v interiéroch.
  % https://books.google.sk/books?hl=sk&lr=&id=tvCJLFLRwzcC&oi=fnd&pg=PR6&dq=geolocation+&ots=Ty6crjz0u0&sig=dV6M3WoE0CxhDM4RKgrIVi5UV0A&redir_esc=y#v=onepage&q=geolocation&f=false
 
-\subsection{Technológia QR kódov}
-QR kód (\textit{Quick Response Code}) je dvojrozmerný čiarový kód, ktorý v roku 1994 vyvinula spoločnosť Denso Wave (patriaca do skupiny Toyota). V roku 2000 bol schválený ako medzinárodný štandard ISO (ISO/IEC18004). Pôvodne bol navrhnutý pre sledovanie dielov v automobilovom priemysle, no vďaka svojej efektivite sa rozšíril do všetkých oblastí digitálnej komunikácie.
+\subsection{Metódy verifikácie účasti na podujatí}
 
-\subsubsection{Kľúčové vlastnosti a štruktúra}
-QR kód sa od klasických lineárnych čiarových kódov líši niekoľkými zásadnými charakteristikami:
-\begin{itemize}
-    \item \textbf{Vysoká hustota dát:} Dokáže uchovať oveľa väčšie množstvo informácií na malej ploche (text, URL adresy, kontaktné údaje).
-    \item \textbf{Podpora znakov:} Okrem číslic a latinky podporuje aj zložitejšie znakové sady (napr. binárne dáta alebo Kanji).
-    \item \textbf{Odolnosť voči poškodeniu:} Vďaka vstavanej korekcii chýb (Reed-Solomonov kód) je možné QR kód správne prečítať, aj keď je časť jeho plochy znečistená alebo poškodená.
-    \item \textbf{Otvorený štandard:} Patent na túto technológiu bol uvoľnený pre verejnosť, čo znamená, že QR kódy môže generovať a používať ktokoľvek bezplatne.
-\end{itemize}
-
-
-
-\subsubsection{Využitie v mobilných zariadeniach}
-V súčasnosti je väčšina moderných smartfónov vybavená kamerami s natívnou podporou čítania QR kódov. Tento mechanizmus sa najčastejšie využíva na:
-\begin{itemize}
-    \item \textbf{Rýchly prístup k informáciám:} Automatické presmerovanie prehliadača na zakódovanú URL adresu.
-    \item \textbf{Bezkontaktné interakcie:} Elektronické vstupenky, platby (napr. skenovanie faktúr) alebo rýchle pripájanie k Wi-Fi sieťam.
-    \item \textbf{Autentifikáciu:} Prepojenie mobilnej aplikácie s webovým rozhraním (napr. WhatsApp Web).
-\end{itemize}
-
-(Zdroj: \url{https://www.iso.org/obp/ui/en/#iso:std:iso-iec:18004:ed-4:v1:en})
 
 
 
@@ -272,6 +251,30 @@ Meta-level & Celý model vygenerovaný jednou technikou slúži ako vstup pre dr
 \end{tabular}
 \end{table}
 Hlavným cieľom väčšiny štúdií zaoberajúcich sa hybridnými modelmi po roku 2010 je integrácia tzv. vedľajších informácií (\textit{side information}), ako sú sociálne väzby medzi používateľmi alebo kontextové dáta, ktoré dopĺňajú chýbajúce explicitné hodnotenia. Týmto spôsobom hybridné systémy dosahujú vyššiu presnosť a robustnosť v porovnaní so samostatnými modelmi.
+
+\paragraph{Porovnanie systémov}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Kritérium} & \textbf{Collaborative} & \textbf{Content} & \textbf{Hybrid} & \textbf{Knowledge} \\
+\hline
+Cold Start (používateľ) & Zlé & Zlé & Stredné & Dobré \\
+\hline
+Cold Start (položka) & Zlé & Dobré & Stredné & Dobré \\
+\hline
+Škálovateľnosť & Zlé & Dobré & Stredné & Dobré \\
+\hline
+Diverzita & Dobré & Zlé & Dobré & Stredné \\
+\hline
+Potreba metadát & Nie & Áno & Čiastočne & Áno \\
+\hline
+Vysvetliteľnosť & Stredné & Dobré & Stredné & Dobré \\
+\hline
+\end{tabular}
+\caption{Porovnanie typov odporúčacích systémov}
+\end{table}
 
 \subsection{Techniky spracovania dát v odporúčacích systémoch}
 Pre efektívne fungovanie vyššie spomínaných modelov sa využívajú špecifické techniky dolovania dát (Data Mining):
