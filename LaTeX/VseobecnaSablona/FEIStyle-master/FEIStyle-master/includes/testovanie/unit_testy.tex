@@ -1,0 +1,108 @@
+\section{Unit testy}
+
+\subsection{Charakteristika unit testov}
+Unit testy sú automatizované testy, ktoré overujú správnosť izolovaných častí kódu — konkrétnych funkcií alebo tried — bez závislosti na externých systémoch, ako sú Firebase, Google Maps alebo používateľské rozhranie. Každý test funguje na overenom princípe:
+
+\begin{enumerate}
+    \item \textbf{Arrange:} Príprava vstupných dát a stavu.
+    \item \textbf{Act:} Vykonanie testovanej funkcie.
+    \item \textbf{Assert:} Porovnanie výsledku s očakávanou hodnotou.
+\end{enumerate}
+
+Ak sa výsledok zhoduje s očakávaním, test je vyhodnotený ako \textbf{PASSED}. V opačnom prípade zlyhá (\textbf{FAILED}) a poskytne informáciu o mieste a príčine chyby.
+
+\subsection{Umiestnenie a spustenie testov}
+Všetky unit testy sú centralizované v súbore:
+\texttt{app/src/test/java/com/example/diplomovka\_kotlin/ExampleUnitTest.kt}
+
+\paragraph{Spustenie testov}
+Testy sa spúšťajú prostredníctvom terminálu z koreňového adresára projektu pomocou Gradle wrappera:
+\begin{verbatim}
+JAVA_HOME="C:/Program Files/Android/Android Studio/jbr" ./gradlew testDebugUnitTest
+\end{verbatim}
+
+Po úspešnej analýze systém vygeneruje detailnú HTML správu v adresári:
+\texttt{app/build/reports/tests/testDebugUnitTest/index.html}
+
+\subsection{Pomocná funkcia testEvent}
+Pre optimalizáciu kódu a elimináciu redundancie pri vytváraní testovacích objektov bola implementovaná pomocná funkcia \texttt{testEvent()}. Táto funkcia obsahuje predvolené hodnoty pre všetky povinné parametre triedy \texttt{Event}, čo umožňuje v jednotlivých testoch definovať len tie atribúty, ktoré sú pre daný scenár relevantné.
+
+\subsection{Popis testovacích skupín}
+
+\subsubsection{Skupina 1: NoShowCountTest}
+Zameriava sa na funkciu \texttt{UserProfile.recentNoShowCount()}, ktorá počíta neúčasti používateľa za posledných 30 dní. Táto logika je kritická pre správne fungovanie penalizačného systému (ban po 3 neúčastiach).
+
+\begin{table}[H]
+    \centering
+    \caption{Prehľad testov pre NoShowCount}
+    \begin{tabular}{|p{4.5cm}|p{4cm}|c|p{3.5cm}|}
+        \hline
+        \textbf{Názov testu} & \textbf{Vstup (noShowTimestamps)} & \textbf{Očak.} & \textbf{Účel} \\ \hline
+        no timestamps returns zero & prázdny zoznam & 0 & Overenie nového užívateľa. \\ \hline
+        two recent no-shows & \texttt{listOf(now-1s, now-2s)} & 2 & Základné počítanie. \\ \hline
+        older than 30 days ignored & \texttt{listOf(now - 31 dní)} & 0 & Overenie časového limitu. \\ \hline
+        mix of old and recent & \texttt{listOf(31d, 1s, 2s)} & 2 & Filtrovanie starých záznamov. \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Skupina 2: CancelDeadlineTest}
+Overuje funkciu \texttt{Event.isPastCancelDeadline()}, ktorá určuje, či používateľ ešte môže zrušiť svoju účasť bez penalizácie.
+
+\begin{table}[H]
+    \centering
+    \caption{Prehľad testov pre zrušenie účasti}
+    \begin{tabular}{|p{4.5cm}|p{4cm}|c|p{3.5cm}|}
+        \hline
+        \textbf{Scenár} & \textbf{Parametre} & \textbf{Výsledok} & \textbf{Logika} \\ \hline
+        checkInType "none" & akýkoľvek čas & \texttt{false} & Bez check-inu niet postihu. \\ \hline
+        deadline set to 0 & akýkoľvek čas & \texttt{false} & Možnosť zrušiť kedykoľvek. \\ \hline
+        past deadline & Event o 1h, deadline 3h & \texttt{true} & Odhlásenie po termíne. \\ \hline
+        before deadline & Event o 10h, deadline 2h & \texttt{false} & Bezpečné odhlásenie. \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Skupina 3: EventFilterTest}
+Testuje \texttt{EventFilterService}, ktorý filtruje zoznam podujatí na základe užívateľských preferencií. Pre účely testu sú definované 4 vzorové podujatia (Jazz, Futbal, Yoga, Tech).
+
+\begin{itemize}
+    \item \textbf{Filter by name:} Overuje, že vyhľadávanie je \textit{case-insensitive} (napr. "jazz" nájde "Jazz Evening").
+    \item \textbf{Filter by category:} Overuje správnosť zaradenia do kategórií (napr. "Sport" vráti Futbal aj Yogu).
+    \item \textbf{Filter by maxPrice:} Testuje numerické porovnávanie cien (napr. do 5€ neukáže konferenciu za 20€).
+\end{itemize}
+
+\subsubsection{Skupina 4: ActiveEventsTest}
+Overuje logiku v \texttt{AppViewModel}, ktorá filtruje aktívne podujatia pre zobrazenie na mape.
+\begin{itemize}
+    \item \textbf{Past event:} Podujatie, ktoré už začalo/skončilo, sa nesmie vrátiť.
+    \item \textbf{Future event:} Budúce podujatia sa musia vrátiť v zozname.
+    \item \textbf{No date event:} Špeciálne podujatia bez dátumu sú považované za trvalo aktívne.
+\end{itemize}
+
+\subsubsection{Skupina 5: RecommendationEngineTest}
+Testuje komplexný algoritmus triedy \texttt{RecommendationEngine}, ktorý zoraďuje podujatia podľa relevancie.
+
+\begin{table}[H]
+    \centering
+    \caption{Logika odporúčacieho algoritmu}
+    \begin{tabular}{|p{5cm}|p{8cm}|}
+        \hline
+        \textbf{Testovaný faktor} & \textbf{Očakávané správanie} \\ \hline
+        \textbf{Vzdialenosť (Distance)} & Bližšie podujatie musí mať vyšší rank ako vzdialené. \\ \hline
+        \textbf{Navštívené (Visited)} & Podujatia v zozname \texttt{visitedEventIds} sú z výsledkov vylúčené. \\ \hline
+        \textbf{Vlastné (Ownership)} & Podujatia vytvorené aktuálnym používateľom sa mu neodporúčajú. \\ \hline
+        \textbf{Minulosť (Recency)} & Ukončené podujatia sa do odporúčaní nedostanú. \\ \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Súhrnný výsledok testovania}
+Celkovo bolo vykonaných \textbf{24 unit testov}. 
+
+\begin{quote}
+    \texttt{BUILD SUCCESSFUL} \\
+    \texttt{24 tests completed, 0 failed}
+\end{quote}
+
+Úspešné absolvovanie všetkých testov potvrdilo stabilitu a správnosť kľúčovej biznis logiky aplikácie Joinly, najmä v oblastiach penalizácie používateľov, filtrovania obsahu a personalizovaných odporúčaní.
+
+%\usepackage{float}
+%\usepackage{array}

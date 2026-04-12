@@ -1,9 +1,9 @@
-\subsubsection{Hodnotenie udalostí}
+\subsection{Hodnotenie udalostí}
 
 Systém hodnotenia umožňuje účastníkom ohodnotiť udalosť po jej skončení.
 Hodnotenie je implementované priamo v \texttt{AppViewModel}.
 
-\paragraph{Dátový model:}
+\subsubsection{Dátový model:}
 Hodnotenie je uložené priamo v dokumente eventu v troch poliach:
 
 \begin{lstlisting}[language=Kotlin, caption=Polia hodnotenia v dátovom modeli eventu]
@@ -12,7 +12,7 @@ val totalRatings: Int          = 0           // počet hodnotení
 val ratedBy     : List<String> = emptyList() // UIDs ktorí už hodnotili
 \end{lstlisting}
 
-\paragraph{Logika hodnotenia:}
+\subsubsection{Logika hodnotenia:}
 Nový priemer sa vypočíta ako vážený priemer — starý priemer sa vynásobí počtom
 predchádzajúcich hodnotení, pripočíta sa nové hodnotenie a výsledok sa vydelí
 novým celkovým počtom. Týmto spôsobom sa zachová presnosť bez nutnosti ukladať
@@ -43,7 +43,7 @@ fun rateEvent(eventId: String, userId: String, stars: Int) {
 }
 \end{lstlisting}
 
-\paragraph{Pravidlá hodnotenia:}
+\subsubsection{Pravidlá hodnotenia:}
 \begin{itemize}
     \item Hodnotiť môžu len účastníci eventu — nie tvorca ani cudzí používatelia.
     \item Každý používateľ môže hodnotiť len raz — kontrola prebieha cez zoznam
@@ -53,7 +53,7 @@ fun rateEvent(eventId: String, userId: String, stars: Int) {
           systému s váhou 16\,\%.
 \end{itemize}
 
-\paragraph{Používateľské rozhranie:}
+\subsubsection{Používateľské rozhranie:}
 Sekcia hodnotenia sa v \texttt{EventDetailScreen} (Tab~0) zobrazí len
 účastníkovi, ktorý ešte nehodnotil:
 
@@ -199,12 +199,20 @@ nezúčastní a ani sa včas neodhlási, systém mu zaznamená no-show.
 \paragraph{Dátový model:}
 Penalizácie sú uložené priamo v profile používateľa (\texttt{UserProfile}):
 
-\begin{lstlisting}[language=Kotlin, caption=Polia no-show v UserProfile]
+\begin{lstlisting}[language=Kotlin, caption=Polia no-show a soft ban v UserProfile]
 val noShowTimestamps: List<Long>   = emptyList() // čas každého no-show (epoch ms)
 val noShowEventIds  : List<String> = emptyList() // dedup - eventy kde bol no-show
 
 val banned          : Boolean      = false        // true = účet zablokovaný
+val banReason       : String       = ""           // "no_show" | "reports" | ""
+val banTimestamp    : Long         = 0L           // čas banu v epoch ms
 \end{lstlisting}
+
+Systém implementuje \textit{soft ban} --- pri zablokovaní sa používateľské dáta
+(história, priatelia, správy) nemažú. Administrátor môže priamo vo Firebase Console
+vidieť dôvod (\texttt{banReason}) a čas (\texttt{banTimestamp}) banu spolu
+s nahláseniami v kolekcii \texttt{reports/} a manuálne rozhodnúť o odbanovaní
+(\texttt{banned: false}) alebo permanentnom vymazaní účtu.
 
 Pomocná metóda počíta no-show len za posledných 30 dní:
 
@@ -266,7 +274,12 @@ suspend fun recordNoShow(userId: String, eventId: String) {
         "noShowTimestamps" to newTimestamps,
         "noShowEventIds"   to newEventIds
     )
-    if (shouldBan) updates["banned"] = true
+    if (shouldBan) {
+        updates["banned"]       = true
+        updates["banReason"]    = "no_show"
+        updates["banTimestamp"] = now
+        cancelPendingInvitations(userId)
+    }
 
     db.collection("users").document(userId).update(updates).await()
 }
@@ -393,10 +406,30 @@ na profile používateľa:
 
 \begin{lstlisting}[language=Kotlin, caption=Automatické zablokovanie používateľa]
 if (total.size() >= REPORTS_TO_BAN) {
+    val banTime = System.currentTimeMillis()
     db.collection("users")
       .document(targetUserId)
-      .update("banned", true)
-      .await()
+      .update(mapOf(
+          "banned"       to true,
+          "banReason"    to "reports",
+          "banTimestamp" to banTime
+      )).await()
+    cancelPendingInvitations(targetUserId)
+}
+\end{lstlisting}
+
+\paragraph{Zrušenie čakajúcich pozvánok pri bane:}
+Pri každom zablokovaní účtu (či už z dôvodu no-show alebo nahlásení) sa
+automaticky vymažú všetky čakajúce pozvánky adresované zabanovanému
+používateľovi, aby ostatní nedostávali odpoveď od zablokovaného účtu:
+
+\begin{lstlisting}[language=Kotlin, caption=Implementácia cancelPendingInvitations]
+suspend fun cancelPendingInvitations(userId: String) {
+    val pending = db.collection("invitations")
+        .whereEqualTo("receiverId", userId)
+        .whereEqualTo("status", "pending")
+        .get().await()
+    pending.documents.forEach { it.reference.delete().await() }
 }
 \end{lstlisting}
 

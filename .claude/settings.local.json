@@ -9,7 +9,12 @@
       "Bash(cd:*)",
       "Bash(tasklist:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell -Command \"Stop-Process -Id 10032 -Force; Write-Host 'Done'\")"
+      "Bash(powershell -Command \"Stop-Process -Id 10032 -Force; Write-Host 'Done'\")",
+      "Bash(grep:*)",
+      "Bash(python3:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)"
     ],
     "deny": [],
     "ask": []

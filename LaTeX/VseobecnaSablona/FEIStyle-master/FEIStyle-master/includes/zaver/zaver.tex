@@ -1,0 +1,18 @@
+Táto práca sa zaoberala návrhom a vývojom mobilnej aplikácie Joinly, ktorej cieľom bolo uľahčiť objavovanie a správu spoločenských udalostí s využitím moderných technológií pre platformu Android.                                                                                                                                                                                                                                                                   
+  V úvodnej kapitole boli vysvetlené základné pojmy potrebné na pochopenie problematiky. Následne bol analyzovaný súčasný stav — existujúce riešenia a ich nedostatky, ktoré motivovali vznik tejto aplikácie. Ďalšia kapitola sa   
+  venovala použitým technológiám a nástrojom. Na základe týchto poznatkov boli definované funkčné a nefunkčné požiadavky, ktoré tvorili základ pre návrh riešenia. Návrh bol zdokumentovaný prostredníctvom UML diagramov. Následne 
+  prebehla samotná implementácia aplikácie a v záverečnej kapitole bolo vykonané testovanie, ktoré overilo správnosť implementovaných funkcionalít.
+
+  Výsledkom práce je funkčná aplikácia pokrývajúca základné požiadavky — autentifikáciu používateľov, správu udalostí, systém účasti, odporúčací systém, chat aj moderačné nástroje. Napriek tomu aplikácia v súčasnom stave nie je 
+  plne pripravená na masové nasadenie. Využíva bezplatné úrovne troch cloudových poskytovateľov — Firebase, Google Maps a Cloudinary — ktoré sú vhodné pre vývoj a testovanie, no pri väčšom počte používateľov by narazili na      
+  limity výkonu aj nákladov. Do budúcnosti by bolo vhodné pre jednotlivé funkcie využiť špecializovaných poskytovateľov optimalizovaných na škálovateľnosť, prípadne vyvinúť vlastné riešenia prispôsobené konkrétnym potrebám      
+  aplikácie.
+
+  Ďalším obmedzením je výpočet odporúčacieho systému, ktorý prebieha priamo na zariadení používateľa. Pri väčšom množstve dát by bolo vhodnejšie presunúť túto logiku na server formou cloudových funkcií. Aplikácia taktiež prešla 
+  len obmedzeným testovaním v kontrolovanom prostredí — dlhodobé testovanie reálnymi používateľmi by odhalilo ďalšie nedostatky, najmä v oblasti odporúčacieho systému, ktorý bez dostatočného množstva reálnych interakcií nie je  
+  možné plnohodnotne vyhodnotiť. Do budúcnosti je možné aplikáciu rozšíriť o prémiové služby pre organizátorov, nákup vstupeniek priamo v aplikácii, ďalšie spôsoby overenia identity, ako aj o riešenie legislatívnych požiadaviek 
+  v oblasti GDPR a ochrany osobných údajov.
+
+  Napriek týmto obmedzeniam predstavuje aplikácia Joinly funkčný základ, ktorý demonštruje reálnu využiteľnosť moderných mobilných technológií pri riešení každodenných potrieb. Aplikácia prináša hodnotu najmä v spojení komunít  
+  okolo spoločných záujmov, zjednodušení organizácie udalostí a personalizovanom objavovaní podujatí prostredníctvom odporúčacieho systému. Týmto spôsobom napĺňa svoj hlavný cieľ — priblížiť ľudí k udalostiam, ktoré sú pre nich 
+  relevantné.

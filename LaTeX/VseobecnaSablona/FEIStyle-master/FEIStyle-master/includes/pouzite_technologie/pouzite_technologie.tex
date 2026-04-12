@@ -329,3 +329,52 @@ Počas vývoja a testovania sa ukázalo, že čisto historické dáta nemusia re
 
 \paragraph{Zdôvodnenie voľby}
 Hlavným argumentom pre túto zmenu bola skutočnosť, že podujatia (\textit{eventy}) obsahujú fixné atribúty (kategória, podkategória, poloha), ktoré existujú nezávisle od histórie používateľa. Hybridný systém umožňuje tieto fixné atribúty dynamicky prepojiť s aktuálnou potrebou používateľa, čím sa eliminuje problém „informačnej bubliny“, do ktorej by čistý \textit{Content-based} systém používateľa uzatvoril.
+
+
+\subsection{Implementácia komunikačného modulu v reálnom čase}
+
+Základom interaktivity v navrhnutej aplikácii je integračná vrstva služby \textbf{Firebase Cloud Firestore}. Táto NoSQL databáza umožňuje obojsmernú synchronizáciu dát medzi klientmi v reálnom čase bez nutnosti implementácie vlastnej serverovej infraštruktúry a správy WebSocket spojení.
+
+\subsubsection{Dátový model správy}
+Pre potreby chatu bol definovaný dátový model \texttt{ChatMessage}. Model uchováva unikátny identifikátor správy, identitu odosielateľa, textový obsah a časovú pečiatku typu \texttt{Long}, ktorá je kritická pre správne chronologické radenie správ v používateľskom rozhraní.
+
+\begin{lstlisting}[language=Kotlin, caption={Dátový model správy v jazyku Kotlin}]
+data class ChatMessage(
+    val id: String = "",
+    val senderId: String = "",
+    val senderName: String = "",
+    val text: String = "",
+    val timestamp: Long = 0L
+)
+\end{lstlisting}
+
+\subsubsection{Reaktívna synchronizácia dát}
+Technické jadro komunikácie tvorí metóda \texttt{addSnapshotListener}. Na rozdiel od štandardných HTTP požiadaviek (Request-Response), tento mechanizmus vytvára trvalé spojenie s konkrétnou podkolekciou dokumentov na ceste \texttt{events/\{eventId\}/messages/}. 
+
+Akonáhle dôjde k zápisu novej správy do databázy, Firebase server iniciuje push notifikáciu smerom k aplikácii, ktorá následne aktualizuje reaktívny stav \texttt{chatMessages} v rámci architektúry ViewModel.
+
+\begin{lstlisting}[language=Kotlin, caption={Implementácia real-time listenera vo ViewModeli}]
+fun startChatListener(eventId: String) {
+    chatListener?.remove() // Prevencia úniku pamäte (memory leak)
+    chatListener = db.collection("events").document(eventId)
+        .collection("messages")
+        .orderBy("timestamp")
+        .addSnapshotListener { snapshot, _ ->
+            _chatMessages.clear()
+            snapshot?.documents?.forEach { doc ->
+                doc.toObject(ChatMessage::class.java)?.let { 
+                    _chatMessages.add(it) 
+                }
+            }
+        }
+}
+\end{lstlisting}
+
+\subsubsection{Užívateľské rozhranie a UX logika}
+Prezentácia dát prebieha prostredníctvom deklaratívneho frameworku \textbf{Jetpack Compose}. Implementácia zahŕňa niekoľko kľúčových mechanizmov pre zlepšenie používateľskej skúsenosti (UX):
+
+\begin{itemize}
+    \item \textbf{Podmienený prístup:} Funkcia odosielania správ je dynamicky povolená len pre účastníkov a tvorcov podujatia, pričom sa kontroluje stav \texttt{isBanned}.
+    \item \textbf{Automatický posun (Auto-scroll):} Pomocou efektu \texttt{LaunchedEffect}, viazaného na zmenu počtu správ v zozname, aplikácia automaticky posúva pohľad na najnovšiu prijatú správu.
+    \item \textbf{Vizuálna diferenciácia:} Komponent \texttt{MessageBubble} realizuje logiku zarovnania (vlastné správy vpravo, prijaté vľavo) a farebného kódovania, čo zvyšuje prehľadnosť konverzácie.
+\end{itemize}
