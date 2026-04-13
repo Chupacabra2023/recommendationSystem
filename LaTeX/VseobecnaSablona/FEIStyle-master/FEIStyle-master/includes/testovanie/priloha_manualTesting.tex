@@ -1,10 +1,30 @@
-\section{Manuálne testovanie systému}
+\documentclass[12pt,a4paper]{article}
 
-V tejto časti sú popísané manuálne testovacie scenáre (Test Cases), ktoré overujú funkčnosť aplikácie z pohľadu koncového používateľa.
-Výsoledky môžete idieť v prílohe~\ref{priloha:manual_tests} 
+% --- Nevyhnutné balíky ---
+\usepackage[utf8]{inputenc}
+\usepackage[slovak]{babel}
+\usepackage{float}
+\usepackage{geometry}
+\geometry{margin=2cm}
+
+% --- Balíky pre tabuľky (TOTO CHÝBALO) ---
+\usepackage{tabularx}
+\usepackage{ltablex} % Umožňuje tabularx prechádzať na viac strán
+\usepackage{booktabs} % Pre príkazy \toprule, \midrule, \bottomrule
+\usepackage{ragged2e} % Pre lepšie zarovnanie textu v bunkách
+
+\begin{document}
+
+\section*{Príloha: Zoznam manuálnych testovacích scenárov}
 
 \hbadness=10000 
-\begin{tabularx}{\textwidth}{@{} l >{\small}p{2.8cm} >{\small}p{3.2cm} >{\small}p{2.5cm} >{\small}X @{} }
+\keepXColumns % Príkaz pre ltablex, aby stĺpce X fungovali správne pri rozdelení strán
+
+% Nastavenie písma pre celú tabuľku na menšie, aby sa ušetrilo miesto
+\footnotesize
+\setlength{\tabcolsep}{4pt} % Zmenšenie medzier medzi stĺpcami
+
+\begin{tabularx}{\textwidth}{@{} l >{\RaggedRight}p{2.5cm} >{\RaggedRight}p{3cm} >{\RaggedRight}p{2.5cm} >{\RaggedRight}X @{} }
 \caption{Zoznam manuálnych testovacích scenárov} \label{tab:manual_tests} \\
 \toprule
 \textbf{ID} & \textbf{Scenár} & \textbf{Kroky} & \textbf{Vstup} & \textbf{Očakávaný výsledok} \\ \midrule
@@ -22,8 +42,8 @@ Výsoledky môžete idieť v prílohe~\ref{priloha:manual_tests}
 \endlastfoot
 
 T01 & Registrácia — platné údaje & Otvoriť apku $\rightarrow$ Register & Platný email, heslo 6+ znakov & Odoslanie verifikácie, presmerovanie na Landing. \\ \midrule
-T02 & Registrácia — slabé heslo & Otvoriť apku $\rightarrow$ Register & Heslo 3 znaky & Chybová hláška o dĺžke hesla. \\ \midrule
-T03 & Registrácia — existujúci email & Otvoriť apku $\rightarrow$ Register & Email v databáze & Chybová hláška o duplicitnom účte. \\ \midrule
+T02 & Registrácia — slabé heslo & Register & Heslo 3 znaky & Chybová hláška o dĺžke hesla. \\ \midrule
+T03 & Registrácia — existujúci email & Register & Email v databáze & Chybová hláška o duplicitnom účte. \\ \midrule
 T04 & Prihlásenie — neoverený email & Login & Neoverený email & Hláška o nutnosti overiť email. \\ \midrule
 T05 & Prihlásenie — správne údaje & Login & Správne údaje & Presmerovanie na mapu. \\ \midrule
 T06 & Prihlásenie — zlé heslo & Login & Nesprávne heslo & Chybová hláška. \\ \midrule
@@ -65,6 +85,8 @@ T41 & Filter — max. cena & Filter $\rightarrow$ Max. cena & „10" & Eventy na
 T42 & Filter — vzdialenosť & Filter $\rightarrow$ Okruh & 5 km & Zobrazia sa eventy do 5 km. \\ \midrule
 T43 & Filter — dátum & Filter $\rightarrow$ Dátum od & Konkrétny deň & Eventy od daného dátumu. \\ \midrule
 T44 & Soft ban užívateľa & 3x nahlásenie profilu & Rôzni užívatelia & Dočasné obmedzenie funkcií účtu. \\ \midrule
-T45 & Odstránenie eventu & 3x nahlásenie eventu & Rôzni užívatelia & Automatické stiahnutie eventu z mapy. \\
-T46 & Použitie rovnakého mena pri registrácii & Registrácia & Existujúce uživatelské jméno & Chybová hláška o duplicitním jménu. \\
+T45 & Odstránenie eventu & 3x nahlásenie eventu & Rôzni užívatelia & Automatické stiahnutie eventu z mapy. \\ \midrule
+T46 & Duplicitné meno & Registrácia & Existujúce meno & Chybová hláška o duplicitnom mene. \\
 \end{tabularx}
+
+\end{document}
