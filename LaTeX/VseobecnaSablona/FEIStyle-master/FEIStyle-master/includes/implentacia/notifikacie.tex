@@ -1,146 +1,144 @@
-\subsection{Implementácia systému lokálnych notifikácií}
+ \subsection{Implementácia systému lokálnych notifikácií}
+                                                                                          
+  Aplikácia Joinly informuje používateľov o nadchádzajúcich udalostiach
+  prostredníctvom lokálnych notifikácií systému Android. Na rozdiel od push
+  notifikácií, ktoré vyžadujú serverovú infraštruktúru, lokálne notifikácie
+  sú naplánované priamo na zariadení a nevyžadujú aktívne internetové                                                                                                                                                              
+  pripojenie v momente doručenia.                                                                                                                                                                                                                                                                                                                                                                                                                                     
+  \paragraph{Architektúra systému:}                                                                                                                                                                                                
+  Systém pozostáva z troch spolupracujúcich komponentov:    
+  \begin{itemize}
+      \item \textbf{NotificationHelper} — singleton objekt zodpovedný za
+            plánovanie a rušenie notifikácií,
+      \item \textbf{NotificationReceiver} — prijímač systémových správ,
+            ktorý zostavuje a zobrazuje notifikáciu,
+      \item \textbf{Notification} — dátový model zabezpečujúci perzistenciu
+            naplánovaných notifikácií vo Firestore.
+  \end{itemize}
 
-Aplikácia Joinly informuje používateľov o nadchádzajúcich udalostiach
-prostredníctvom lokálnych notifikácií systému Android. Na rozdiel od push
-notifikácií, ktoré vyžadujú serverovú infraštruktúru, lokálne notifikácie
-sú naplánované priamo na zariadení a nevyžadujú aktívne internetové
-pripojenie v momente doručenia.
+  \paragraph{Notifikačný kanál a správa oprávnení:}
+  Od verzie Android 8.0 (Oreo) je povinné zaregistrovať notifikačný kanál
+  pred prvým použitím. Kanál s identifikátorom \texttt{joinly\_events}
+  a prioritou \texttt{IMPORTANCE\_HIGH} sa vytvára pri štarte aplikácie.
+  Od verzie Android 13 (Tiramisu) vyžaduje zobrazovanie notifikácií
+  explicitné oprávnenie \texttt{POST\_NOTIFICATIONS}, ktoré aplikácia vyžiada
+  pri prvom spustení. Oprávnenie \texttt{SCHEDULE\_EXACT\_ALARM} je
+  deklarované v \texttt{AndroidManifest.xml}.
 
-\paragraph{Architektúra systému:}
-Systém pozostáva z troch spolupracujúcich komponentov:
-\begin{itemize}
-    \item \textbf{NotificationHelper} — singleton objekt zodpovedný za
-          plánovanie a rušenie notifikácií,
-    \item \textbf{NotificationReceiver} — prijímač systémových správ,
-          ktorý zostavuje a zobrazuje notifikáciu,
-    \item \textbf{Notification} — dátový model zabezpečujúci perzistenciu
-          naplánovaných notifikácií vo Firestore.
-\end{itemize}
+  \iffalse                                                                                                                                                                                                                         
+  \begin{lstlisting}[language=Kotlin, caption=Vytvorenie notifikačného kanála]
+  fun createChannel(context: Context) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          val channel = NotificationChannel(
+              CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
+          ).apply {
+              description = "Upozornenia na nadchadzajuce udalosti"
+          }
+          context.getSystemService(NotificationManager::class.java)
+              .createNotificationChannel(channel)
+      }
+  }
+  \end{lstlisting}
+  \fi                                                                                                                                                                                                                              
 
-\paragraph{Notifikačný kanál a správa oprávnení:}
-Od verzie Android 8.0 (Oreo) je povinné zaregistrovať notifikačný kanál
-pred prvým použitím. Kanál s identifikátorom \texttt{joinly\_events}
-a prioritou \texttt{IMPORTANCE\_HIGH} sa vytvára pri štarte aplikácie
-v \texttt{LaunchedEffect} v kompozícii \texttt{App.kt}:
+  \paragraph{Plánovanie notifikácie:}
+  Notifikácia sa naplánuje automaticky v momente, keď sa používateľ pripojí
+  k udalosti ako potvrdený účastník. Upozornenie sa odošle hodinu pred
+  začiatkom udalosti. Plánovanie zabezpečuje \texttt{AlarmManager}
+  prostredníctvom metódy \texttt{setExactAndAllowWhileIdle}, ktorá garantuje
+  spustenie aj v prípade, že je zariadenie v úspornom režime
+  (\textit{Doze mode}). Na zariadeniach s Android 12+ sa pred použitím
+  presného alarmu overí dostupnosť oprávnenia:
 
-\begin{lstlisting}[language=Kotlin, caption=Vytvorenie notifikačného kanála]
-fun createChannel(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channel = NotificationChannel(
-            CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "Upozornenia na nadchadzajuce udalosti"
-        }
-        context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannel(channel)
-    }
-}
-\end{lstlisting}
+  \begin{lstlisting}[language=Kotlin, caption=Plánovanie notifikácie pomocou AlarmManager]
+  fun scheduleEventNotification(context: Context, event: Event) {
+      val dateFrom = event.dateFrom ?: return
+      val notifyAt = dateFrom.time - NOTIFY_BEFORE_MS   // 1 hodina pred
+      if (notifyAt <= System.currentTimeMillis()) return
 
-Od verzie Android 13 (Tiramisu) vyžaduje zobrazovanie notifikácií
-explicitné oprávnenie \texttt{POST\_NOTIFICATIONS}. Aplikácia ho vyžiada
-pri prvom spustení pomocou \texttt{rememberLauncherForActivityResult}.
-Oprávnenie \texttt{SCHEDULE\_EXACT\_ALARM} je deklarované v súbore
-\texttt{AndroidManifest.xml} a umožňuje presné načasovanie budíkov.
+      val alarmManager = context.getSystemService(AlarmManager::class.java)
+      val pending = buildPendingIntent(context, event)
 
-\paragraph{Plánovanie notifikácie:}
-Notifikácia sa naplánuje automaticky v momente, keď sa používateľ pripojí
-k udalosti ako potvrdený účastník (nie ako čakajúci v poradovníku).
-Upozornenie sa odošle hodinu pred začiatkom udalosti. Plánovanie
-zabezpečuje \texttt{AlarmManager} prostredníctvom metódy
-\texttt{setExactAndAllowWhileIdle}, ktorá garantuje spustenie aj v prípade,
-že je zariadenie v úspornom režime (\textit{Doze mode}). Na zariadeniach
-s Android 12+ sa pred použitím presného alarmu overí dostupnosť oprávnenia:
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+              && !alarmManager.canScheduleExactAlarms()) {
+          alarmManager.setAndAllowWhileIdle(
+              AlarmManager.RTC_WAKEUP, notifyAt, pending
+          )
+      } else {
+          alarmManager.setExactAndAllowWhileIdle(
+              AlarmManager.RTC_WAKEUP, notifyAt, pending
+          )
+      }
+  }
+  \end{lstlisting}
 
-\begin{lstlisting}[language=Kotlin, caption=Plánovanie notifikácie pomocou AlarmManager]
-fun scheduleEventNotification(context: Context, event: Event) {
-    val dateFrom = event.dateFrom ?: return
-    val notifyAt = dateFrom.time - NOTIFY_BEFORE_MS   // 1 hodina pred
-    if (notifyAt <= System.currentTimeMillis()) return
+  Každý alarm je identifikovaný pomocou \texttt{PendingIntent} s metadátami
+  udalosti. Ako kľúč pre \texttt{requestCode} sa používa
+  \texttt{eventId.hashCode()}, čo zaručuje jednoznačnú identifikáciu každej
+  naplánovanej notifikácie.
 
-    val alarmManager = context.getSystemService(AlarmManager::class.java)
-    val pending = buildPendingIntent(context, event)
+  \paragraph{Zobrazenie notifikácie:}
+  Keď \texttt{AlarmManager} spustí alarm, systém doručí broadcast triede
+  \texttt{NotificationReceiver}, ktorá implementuje \texttt{BroadcastReceiver}.
+  Prijímač z \texttt{Intent} extrahuje metadáta udalosti, zostaví text správy
+  a zobrazí notifikáciu cez \texttt{NotificationManagerCompat} s prioritou
+  \texttt{PRIORITY\_HIGH} a automatickým zatvorením po kliknutí.
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            && !alarmManager.canScheduleExactAlarms()) {
-        alarmManager.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP, notifyAt, pending
-        )
-    } else {
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP, notifyAt, pending
-        )
-    }
-}
-\end{lstlisting}
+  \iffalse                                                                                                                                                                                                                         
+  \begin{lstlisting}[language=Kotlin, caption=Zostavenie a zobrazenie notifikácie]
+  override fun onReceive(context: Context, intent: Intent) {
+      val eventTitle = intent.getStringExtra("eventTitle") ?: "Udalost"
+      val eventPlace = intent.getStringExtra("eventPlace") ?: ""
+      val eventTime  = intent.getLongExtra("eventTime", 0L)
 
-Každý alarm je identifikovaný pomocou \texttt{PendingIntent}, do ktorého
-sú vložené metadáta udalosti — \texttt{eventId}, \texttt{eventTitle},
-\texttt{eventPlace} a čas začiatku. Ako kľúč pre \texttt{requestCode}
-sa používa \texttt{eventId.hashCode()}, čo zaručuje jednoznačnú
-identifikáciu každej naplánovanej notifikácie.
+      val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault())
+          .format(Date(eventTime))
+      val body = "\"$eventTitle\" zacina o $timeStr - $eventPlace"
 
-\paragraph{Zobrazenie notifikácie:}
-Keď \texttt{AlarmManager} spustí alarm, systém doručí broadcast triede
-\texttt{NotificationReceiver}, ktorá implementuje \texttt{BroadcastReceiver}.
-Prijímač z \texttt{Intent} extrahuje metadáta udalosti, zostaví text správy
-a zobrazí notifikáciu cez \texttt{NotificationManagerCompat}:
+      val notification = NotificationCompat.Builder(
+              context, NotificationHelper.CHANNEL_ID
+          )
+          .setSmallIcon(R.drawable.ic_star)
+          .setContentTitle("Joinly -- Event o hodinu!")
+          .setContentText(body)
+          .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+          .setPriority(NotificationCompat.PRIORITY_HIGH)
+          .setAutoCancel(true)
+          .build()
 
-\begin{lstlisting}[language=Kotlin, caption=Zostavenie a zobrazenie notifikácie]
-override fun onReceive(context: Context, intent: Intent) {
-    val eventTitle = intent.getStringExtra("eventTitle") ?: "Udalost"
-    val eventPlace = intent.getStringExtra("eventPlace") ?: ""
-    val eventTime  = intent.getLongExtra("eventTime", 0L)
+      NotificationManagerCompat.from(context)
+          .notify(eventId.hashCode(), notification)
+  }
+  \end{lstlisting}
+  \fi                                                                                                                                                                                                                              
 
-    val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault())
-        .format(Date(eventTime))
-    val body = "\"$eventTitle\" zacina o $timeStr - $eventPlace"
+  Trieda \texttt{NotificationReceiver} je registrovaná v súbore
+  \texttt{AndroidManifest.xml} ako prijímač systémových správ.
 
-    val notification = NotificationCompat.Builder(
-            context, NotificationHelper.CHANNEL_ID
-        )
-        .setSmallIcon(R.drawable.ic_star)
-        .setContentTitle("Joinly -- Event o hodinu!")
-        .setContentText(body)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setAutoCancel(true)
-        .build()
+  \paragraph{Zrušenie notifikácie:}
+  Ak používateľ opustí udalosť alebo ak organizátor udalosť vymaže,
+  naplánovaný alarm sa zruší volaním \texttt{cancelEventNotification}.
+  Zrušenie využíva príznak \texttt{FLAG\_NO\_CREATE} — ak alarm neexistuje,
+  metóda nevyvolá chybu:
 
-    NotificationManagerCompat.from(context)
-        .notify(eventId.hashCode(), notification)
-}
-\end{lstlisting}
+  \begin{lstlisting}[language=Kotlin, caption=Zrušenie naplánovanej notifikácie]
+  fun cancelEventNotification(context: Context, eventId: String) {
+      val alarmManager = context.getSystemService(AlarmManager::class.java)
+      val intent = Intent(context, NotificationReceiver::class.java)
+      val pending = PendingIntent.getBroadcast(
+          context,
+          eventId.hashCode(),
+          intent,
+          PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+      )
+      pending?.let { alarmManager.cancel(it) }
+  }
+  \end{lstlisting}
 
-Trieda \texttt{NotificationReceiver} je registrovaná v súbore
-\texttt{AndroidManifest.xml} ako prijímač systémových správ.
-
-\paragraph{Zrušenie notifikácie:}
-Ak používateľ opustí udalosť alebo ak organizátor udalosť vymaže,
-naplánovaný alarm sa zruší volaním \texttt{cancelEventNotification}.
-Zrušenie sa vykoná vyhľadaním existujúceho \texttt{PendingIntent}
-s príznakmi \texttt{FLAG\_NO\_CREATE} — ak alarm neexistuje, metóda
-nevyvolá chybu:
-
-\begin{lstlisting}[language=Kotlin, caption=Zrušenie naplánovanej notifikácie]
-fun cancelEventNotification(context: Context, eventId: String) {
-    val alarmManager = context.getSystemService(AlarmManager::class.java)
-    val intent = Intent(context, NotificationReceiver::class.java)
-    val pending = PendingIntent.getBroadcast(
-        context,
-        eventId.hashCode(),
-        intent,
-        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-    )
-    pending?.let { alarmManager.cancel(it) }
-}
-\end{lstlisting}
-
-\paragraph{Perzistencia vo Firestore:}
-Okrem lokálneho alarmu sa každá naplánovaná notifikácia uloží aj do
-Firestore kolekcie \texttt{notifications}. Dátový model \texttt{Notification}
-uchováva \texttt{userId}, \texttt{eventId}, \texttt{eventTitle}, čas
-odoslania \texttt{scheduledAt} a príznak \texttt{sent}. Tento záznam sa
-pri opustení udalosti alebo vymazaní eventu tiež odstráni. Perzistencia vo
-Firestore slúži ako záloha pre prípad, keby sa lokálny alarm stratil
-(napríklad po reštarte zariadenia).
+  \paragraph{Perzistencia vo Firestore:}
+  Okrem lokálneho alarmu sa každá naplánovaná notifikácia uloží aj do
+  Firestore kolekcie \texttt{notifications} s poliami \texttt{userId},
+  \texttt{eventId}, \texttt{scheduledAt} a príznakom \texttt{sent}.
+  Záznam sa pri opustení udalosti alebo jej vymazaní tiež odstráni.
+  Perzistencia vo Firestore slúži ako záloha pre prípad, keby sa lokálny
+  alarm stratil napríklad po reštarte zariadenia.

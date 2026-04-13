@@ -1,305 +1,181 @@
-\subsection{Eventy — implementácia}
+\subsection{Eventy — implementácia}                                                                                                                                                                                                                                 
+\subsubsection{Tvorba eventu}                                                                                                                                                                                                                                       
+Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrdení polohy na mape. Formulár obsahuje nasledujúce polia:
 
-\subsubsection{Tvorba eventu}
-
-Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrdení
-polohy na mape. Formulár obsahuje nasledujúce polia:
-
-\begin{itemize}
-    \item \textbf{Názov a popis} — textové polia, obe sú povinné.
+\begin{itemize}[noitemsep] % SEM TO PATRÍ (hneď za begin{itemize})
+    \item \textbf{Názov a popis} — textové polia, obe sú povinné.                                                                                                                                                                                        
     \item \textbf{Miesto} — predvyplnené adresou získanou z Geocoderu / Places API.
     \item \textbf{Cena a počet účastníkov} — hodnota 0 znamená zadarmo, resp. neobmedzený počet.
-    \item \textbf{Dátum a čas} — výber cez \texttt{DatePickerDialog} a \texttt{TimePickerDialog}.
-    \item \textbf{Trvanie} — zadávané v hodinách a minútach; hodnota \texttt{dateTo}
-          sa vypočíta automaticky:
-\begin{lstlisting}[language=Kotlin]
-val computedDateTo = dateFrom?.let {
-    Date(it.time + totalMinutes * 60 * 1000L)
-}
-\end{lstlisting}
-    \item \textbf{Kategória a podkategória} — výber z rozbaľovacieho zoznamu
-          definovaného v \texttt{CATEGORY\_MAP}.
+    \item \textbf{Dátum, čas a trvanie} — výber cez \texttt{DatePickerDialog} a \texttt{TimePickerDialog}; hodnota \texttt{dateTo} sa vypočíta automaticky z trvania.
+    \item \textbf{Kategória a podkategória} — výber z \texttt{CATEGORY\_MAP}.
     \item \textbf{Viditeľnosť} — verejné alebo súkromné; súkromný event vyžaduje heslo.
-    \item \textbf{Typ check-in} — jedna zo štyroch možností:
-          \texttt{none}, \texttt{qr}, \texttt{manual}, \texttt{qr\_and\_manual}.
-    \item \textbf{Deadline odhlásenia} — počet hodín pred eventom, po uplynutí ktorých
-          sa odhlásenie penalizuje.
+    \item \textbf{Typ check-in} — \texttt{none}, \texttt{qr}, \texttt{manual} alebo \texttt{qr\_and\_manual}.
+    \item \textbf{Deadline odhlásenia} — počet hodín pred eventom, po uplynutí ktorých sa odhlásenie penalizuje.
 \end{itemize}
 
-\paragraph{Upload obrázkov cez Cloudinary:}
-Obrázky sa vyberajú z galérie zariadenia pomocou
-\texttt{ActivityResultContracts.GetMultipleContents()}. Každý obrázok sa uploaduje
-ako \texttt{multipart/form-data} priamo na Cloudinary API bez potreby vlastného
-backendu:
+  \paragraph{Upload obrázkov cez Cloudinary:}
+  Obrázky sa vyberajú z galérie pomocou
+  \texttt{ActivityResultContracts.GetMultipleContents()} a uploadujú sa ako
+  \texttt{multipart/form-data} priamo na Cloudinary API bez potreby vlastného
+  backendu. Prístupové kľúče (\texttt{CLOUDINARY\_CLOUD\_NAME},
+  \texttt{CLOUDINARY\_UPLOAD\_PRESET}) sú uložené v \texttt{local.properties}
+  a sprístupnené cez \texttt{BuildConfig}.
 
-\begin{lstlisting}[language=Kotlin, caption=Upload obrázka na Cloudinary]
-private suspend fun uploadToCloudinary(
-    context: Context,
-    uri: Uri,
-    eventId: String
-): String {
-    val url = URL("https://api.cloudinary.com/v1_1/$cloudName/image/upload")
-    val conn = (url.openConnection() as HttpsURLConnection).apply {
-        requestMethod = "POST"
-        setRequestProperty(
-            "Content-Type",
-            "multipart/form-data; boundary=$boundary"
-        )
-    }
-    // zapíše upload_preset + bytes obrázka
-    // vráti secure_url z JSON odpovede
-}
-\end{lstlisting}
+  \paragraph{Uloženie eventu:}
+  Metóda \texttt{AppViewModel.saveEventToMap()} uloží event súčasne do
+  in-memory mapy \texttt{\_events} aj do databázy Firestore:
 
-Prístupové kľúče (\texttt{CLOUDINARY\_CLOUD\_NAME}, \texttt{CLOUDINARY\_UPLOAD\_PRESET})
-sú uložené v súbore \texttt{local.properties} a sprístupnené cez \texttt{BuildConfig}.
+  \begin{lstlisting}[language=Kotlin, caption=Uloženie eventu do Firestore]
+  fun saveEventToMap(event: Event) {
+      _events[event.id] = event
+      viewModelScope.launch {
+          db.collection("events")
+            .document(event.id)
+            .set(event.toMap())
+            .await()
+      }
+  }
+  \end{lstlisting}
 
-\paragraph{Uloženie eventu:}
-Po vyplnení formulára sa event uloží volaním \texttt{onSave()}:
+  % -------------------------------------------------------                                                                                                                                                                        
+  \subsubsection{Detail eventu}
 
-\begin{lstlisting}[language=Kotlin, caption=Uloženie eventu]
-onSave(event.copy(
-    title               = title.trim(),
-    dateFrom            = dateFrom,
-    dateTo              = computedDateTo,
-    visibility          = if (isPrivate) "private" else "public",
-    imageUrls           = existingUrls + uploadedUrls,
-    checkInType         = checkInType,
-    cancelDeadlineHours = cancelDeadlineInput.toIntOrNull() ?: 0
-))
-\end{lstlisting}
+  Obrazovka detailu eventu (\texttt{EventDetailScreen.kt}) je rozdelená do
+  troch tabov.
 
-Metóda \texttt{AppViewModel.saveEventToMap()} uloží event súčasne do in-memory
-mapy \texttt{\_events} aj do databázy Firestore:
+  \paragraph{Tab 0 — Detail:}
+  Zobrazuje všetky informácie o evente. Kľúčové stavy používateľa sú určené
+  nasledovne:
 
-\begin{lstlisting}[language=Kotlin, caption=Uloženie eventu do Firestore]
-fun saveEventToMap(event: Event) {
-    _events[event.id] = event
-    viewModelScope.launch {
-        db.collection("events")
-          .document(event.id)
-          .set(event.toMap())
-          .await()
-    }
-}
-\end{lstlisting}
+  \begin{lstlisting}[language=Kotlin, caption=Stavové premenné v detaile eventu]
+  val isCreator    = event.creatorId == currentUserId
+  val isAttending  = currentUserId in event.attendees
+  val isOnWaitlist = currentUserId in event.waitlist
+  val isFull       = event.participants > 0 &&                                                                                                                                                                                     
+                     event.attendees.size >= event.participants
+  val isBanned     = currentUserId in event.bannedUsers
+  \end{lstlisting}
 
-% -------------------------------------------------------
-\subsubsection{Detail eventu}
+  Tlačidlá akcie sa dynamicky menia podľa stavu — tvorca vidí úpravu
+  a mazanie, prihlásený účastník odhlásenie, ostatní prihlásenie alebo
+  zaradenie do poradovníka.
 
-Obrazovka detailu eventu (\texttt{EventDetailScreen.kt}) je rozdelená do troch tabov.
+  \paragraph{Tab 1 — Účastníci:}
+  Zobrazuje zoznam účastníkov s avatarmi. Tvorca môže manuálne označiť
+  príchod účastníka (ak \texttt{checkInType == "manual"}) alebo ho odstrániť
+  — odstránený účastník je zároveň zablokovaný pre daný event a prvý
+  z poradovníka je automaticky povýšený.
 
-\paragraph{Tab 0 — Detail:}
-Zobrazuje všetky informácie o evente. Kľúčové stavy používateľa sú určené
-nasledovne:
+  \paragraph{Tab 2 — Chat:}
+  Real-time chat implementovaný pomocou Firestore \texttt{snapshotListener}.
+  Prístup majú výlučne prihlásení účastníci a tvorca eventu.
 
-\begin{lstlisting}[language=Kotlin, caption=Stavové premenné v detaile eventu]
-val isCreator    = event.creatorId == currentUserId
-val isAttending  = currentUserId in event.attendees
-val isOnWaitlist = currentUserId in event.waitlist
-val isFull       = event.participants > 0 &&
+  % -------------------------------------------------------                                                                                                                                                                        
+  \subsubsection{Správa účasti}
+
+  Správa účasti je implementovaná v \texttt{AppViewModel} prostredníctvom
+  troch metód.
+
+  \paragraph{joinEvent — prihlásenie na event:}
+  Ak je event plný, používateľ je zaradený do poradovníka; inak priamo
+  medzi účastníkov:
+
+  \begin{lstlisting}[language=Kotlin, caption=Prihlásenie na event]
+  fun joinEvent(eventId: String, userId: String) {
+      val isFull = event.participants > 0 &&                                                                                                                                                                                       
                    event.attendees.size >= event.participants
-val isBanned     = currentUserId in event.bannedUsers
-\end{lstlisting}
+      val updated = if (isFull)
+          event.copy(waitlist  = event.waitlist  + userId)
+      else
+          event.copy(attendees = event.attendees + userId)
+      // uloží do Firestore
+  }
+  \end{lstlisting}
 
-Tlačidlá akcie sa dynamicky menia podľa stavu — tvorca eventu vidí možnosti
-úpravy a mazania, prihlásený účastník vidí odhlásenie, ostatní používatelia
-vidia možnosť prihlásenia alebo zaradenia do poradovníka.
+  \paragraph{leaveEvent — odhlásenie z eventu:}
+  Pri odhlásení sa automaticky povýši prvý používateľ z poradovníka.
+  Ak sa používateľ odhlási po uplynutí deadlinu, je mu zaznamenaný no-show:
 
-\paragraph{Tab 1 — Účastníci:}
-Zobrazuje zoznam účastníkov s ich avatarmi. Tvorca eventu má navyše možnosť:
-\begin{itemize}
-    \item manuálne označiť príchod účastníka (ak \texttt{checkInType == "manual"}),
-    \item odstrániť účastníka z eventu — odstránený účastník je zároveň zaradený
-          do zoznamu \texttt{bannedUsers} a prvý používateľ z poradovníka je
-          automaticky povýšený.
-\end{itemize}
+  \begin{lstlisting}[language=Kotlin, caption=Odhlásenie z eventu]
+  fun leaveEvent(eventId: String, userId: String) {
+      val applyPenalty = event.isPastCancelDeadline()
+      var updated = event.copy(attendees = event.attendees - userId)
+      if (updated.waitlist.isNotEmpty()) {
+          val next = updated.waitlist.first()
+          updated = updated.copy(
+              attendees = updated.attendees + next,
+              waitlist  = updated.waitlist.drop(1)
+          )
+      }
+      if (applyPenalty) recordNoShow(userId, eventId)
+  }
+  \end{lstlisting}
 
-\paragraph{Tab 2 — Chat:}
-Real-time chat implementovaný pomocou Firestore \texttt{snapshotListener}.
-Prístup do chatu majú výlučne prihlásení účastníci a tvorca eventu.
+  \paragraph{removeAttendee — odstránenie účastníka tvorcom:}
+  Funguje rovnako ako odhlásenie, no navyše zaradí odstráneného účastníka
+  do zoznamu \texttt{bannedUsers}, čím mu zamedzí opätovné prihlásenie
+  na daný event.
 
-% -------------------------------------------------------
-\subsubsection{Správa účasti}
+  % -------------------------------------------------------                                                                                                                                                                        
+  \subsubsection{Filtrovanie udalostí}
 
-Správa účasti je implementovaná v \texttt{AppViewModel} prostredníctvom
-troch metód.
+  Filtrovanie je implementované ako samostatná servisná trieda
+  \texttt{EventFilterService}, ktorá prijíma kritériá zapuzdrené
+  v dátovej triede \texttt{FilterCriteria}:
 
-\paragraph{joinEvent — prihlásenie na event:}
-Ak je event plný, používateľ je zaradený do poradovníka; v opačnom prípade
-priamo medzi účastníkov:
+  \begin{lstlisting}[language=Kotlin, caption=Dátová trieda FilterCriteria]
+  data class FilterCriteria(
+      val name          : String? = null,
+      val category      : String? = null,
+      val subcategory   : String? = null,
+      val participants  : Int?    = null,
+      val maxPrice      : Double? = null,
+      val dateFrom      : Date?   = null,
+      val maxDistanceKm : Double? = null,
+      val refLat        : Double  = 0.0,
+      val refLng        : Double  = 0.0
+  )
+  \end{lstlisting}
 
-\begin{lstlisting}[language=Kotlin, caption=Prihlásenie na event]
-fun joinEvent(eventId: String, userId: String) {
-    val isFull = event.participants > 0 &&
-                 event.attendees.size >= event.participants
-    val updated = if (isFull)
-        event.copy(waitlist  = event.waitlist  + userId)
-    else
-        event.copy(attendees = event.attendees + userId)
-    // uloží do Firestore
-}
-\end{lstlisting}
+  Trieda \texttt{EventFilterService} aplikuje kritériá postupne — ak event
+  nevyhovuje čo i len jednému z nich, je vyradený. Príklad jednej podmienky:
 
-\paragraph{leaveEvent — odhlásenie z eventu:}
-Pri odhlásení sa automaticky povýši prvý používateľ z poradovníka. Ak sa
-používateľ odhlási po uplynutí deadlinu, je mu zaznamenaný no-show:
+  \begin{lstlisting}[language=Kotlin, caption=Príklad podmienky vo EventFilterService]
+  if (!criteria.name.isNullOrEmpty() &&                                                                                                                                                                                            
+      !event.title.lowercase().contains(criteria.name.lowercase()))
+      return false
+  \end{lstlisting}
 
-\begin{lstlisting}[language=Kotlin, caption=Odhlásenie z eventu]
-fun leaveEvent(eventId: String, userId: String) {
-    val applyPenalty = event.isPastCancelDeadline()
-    var updated = event.copy(attendees = event.attendees - userId)
-    if (updated.waitlist.isNotEmpty()) {
-        val next = updated.waitlist.first()
-        updated = updated.copy(
-            attendees = updated.attendees + next,
-            waitlist  = updated.waitlist.drop(1)
-        )
-    }
-    if (applyPenalty) recordNoShow(userId, eventId)
-}
-\end{lstlisting}
+  \paragraph{Výpočet vzdialenosti — Haversine:}
+  Na výpočet vzdialenosti medzi dvoma GPS súradnicami sa používa Haversine
+  vzorec, ktorý zohľadňuje zakrivenie Zeme. Výsledkom je vzdialenosť
+  v kilometroch ($R = 6371\ \text{km}$):
 
-\paragraph{removeAttendee — odstránenie účastníka tvorcom:}
-Odstránený účastník je zároveň zablokovaný pre daný event a prvý z poradovníka
-je automaticky povýšený:
+  \begin{lstlisting}[language=Kotlin, caption=Haversine vzorec]
+  private fun haversineKm(
+      lat1: Double, lon1: Double,
+      lat2: Double, lon2: Double
+  ): Double {
+      val dLat = Math.toRadians(lat2 - lat1)
+      val dLon = Math.toRadians(lon2 - lon1)
+      val a = sin(dLat / 2).pow(2) +
+              cos(Math.toRadians(lat1)) *
+              cos(Math.toRadians(lat2)) *
+              sin(dLon / 2).pow(2)
+      return 6371.0 * 2 * asin(sqrt(a))
+  }
+  \end{lstlisting}
 
-\begin{lstlisting}[language=Kotlin, caption=Odstránenie účastníka tvorcom eventu]
-fun removeAttendee(eventId: String, attendeeId: String) {
-    val updated = event.copy(
-        attendees   = event.attendees   - attendeeId,
-        bannedUsers = event.bannedUsers + attendeeId
-    )
-    // + automatické povýšenie z poradovníka
-}
-\end{lstlisting}
+  \paragraph{Filter bottom sheet — UI:}
+  Filter sa zobrazí ako \texttt{ModalBottomSheet} po kliknutí na „Nájsť
+  udalosť". Používateľ filtruje podľa názvu, kategórie, ceny, vzdialenosti
+  a dátumu. Po potvrdení sa zostavia kritériá a aplikujú na markery mapy:
 
-% -------------------------------------------------------
-\subsubsection{Filtrovanie udalostí}
+  \begin{lstlisting}[language=Kotlin, caption=Aplikovanie filtrov na mapu]
+  val filtered = EventFilterService(criteria).filter(events)
+  markers.values.forEach { it.isVisible = false }
+  filtered.forEach { event -> markers[event.id]?.isVisible = true }
+  \end{lstlisting}
 
-Filtrovanie je implementované ako samostatná servisná trieda
-\texttt{EventFilterService}, ktorá prijíma kritériá a aplikuje ich na zoznam
-eventov.
-
-\paragraph{FilterCriteria:}
-Dátová trieda zapuzdruje všetky dostupné filtre:
-
-\begin{lstlisting}[language=Kotlin, caption=Dátová trieda FilterCriteria]
-data class FilterCriteria(
-    val name           : String? = null,
-    val category       : String? = null,
-    val subcategory    : String? = null,
-    val participants   : Int?    = null,
-    val maxPrice       : Double? = null,
-    val dateFrom       : Date?   = null,
-    val dateTo         : Date?   = null,
-    val maxDistanceKm  : Double? = null,
-    val refLat         : Double  = 0.0,
-    val refLng         : Double  = 0.0
-)
-\end{lstlisting}
-
-\paragraph{EventFilterService:}
-Trieda aplikuje kritériá postupne — ak event nevyhovuje čo i len jednému
-z nich, je zo zoznamu vyradený:
-
-\begin{lstlisting}[language=Kotlin, caption=Implementácia EventFilterService]
-class EventFilterService(private val criteria: FilterCriteria) {
-
-    fun filter(allEvents: List<Event>): List<Event> =
-        allEvents.filter { matches(it) }
-
-    private fun matches(event: Event): Boolean {
-        if (!criteria.name.isNullOrEmpty() &&
-            !event.title.lowercase().contains(criteria.name.lowercase()))
-            return false
-
-        if (!criteria.category.isNullOrEmpty() &&
-            event.category != criteria.category)
-            return false
-
-        if (!criteria.subcategory.isNullOrEmpty() &&
-            event.subcategory != criteria.subcategory)
-            return false
-
-        if (criteria.participants != null && criteria.participants > 0 &&
-            event.participants < criteria.participants)
-            return false
-
-        if (criteria.maxPrice != null && criteria.maxPrice < 500.0 &&
-            event.price > criteria.maxPrice)
-            return false
-
-        if (criteria.dateFrom != null && event.dateFrom != null &&
-            event.dateFrom.before(criteria.dateFrom))
-            return false
-
-        if (criteria.maxDistanceKm != null) {
-            val dist = haversineKm(
-                criteria.refLat, criteria.refLng,
-                event.latitude,  event.longitude
-            )
-            if (dist > criteria.maxDistanceKm) return false
-        }
-        return true
-    }
-}
-\end{lstlisting}
-
-\paragraph{Výpočet vzdialenosti — Haversine:}
-Na výpočet vzdialenosti medzi dvoma GPS súradnicami sa používa Haversine vzorec,
-ktorý zohľadňuje zakrivenie Zeme. Výsledkom je vzdialenosť v kilometroch
-(polomer Zeme $R = 6371\ \text{km}$):
-
-\begin{lstlisting}[language=Kotlin, caption=Haversine vzorec]
-private fun haversineKm(
-    lat1: Double, lon1: Double,
-    lat2: Double, lon2: Double
-): Double {
-    val dLat = Math.toRadians(lat2 - lat1)
-    val dLon = Math.toRadians(lon2 - lon1)
-    val a = sin(dLat / 2).pow(2) +
-            cos(Math.toRadians(lat1)) *
-            cos(Math.toRadians(lat2)) *
-            sin(dLon / 2).pow(2)
-    return 6371.0 * 2 * asin(sqrt(a))
-}
-\end{lstlisting}
-
-\paragraph{Filter bottom sheet — UI:}
-Filter sa zobrazí ako \texttt{ModalBottomSheet} po kliknutí na tlačidlo
-„Nájsť udalosť". Používateľ môže filtrovať podľa:
-\begin{itemize}
-    \item názvu — fulltextové vyhľadávanie (case-insensitive),
-    \item kategórie a podkategórie — výber z \texttt{CATEGORY\_MAP},
-    \item počtu osôb — slider v rozsahu 0–200,
-    \item maximálnej ceny — slider 0–150\,€; hodnota nad 150\,€ znamená
-          bez obmedzenia,
-    \item vzdialenosti — slider 1–50\,km od GPS polohy používateľa;
-          hodnota nad 50\,km znamená kdekoľvek,
-    \item dátumu začiatku — výber cez \texttt{DatePickerDialog}
-          a \texttt{TimePickerDialog}.
-\end{itemize}
-
-Po kliknutí na „Použiť" sa zostavia kritériá a filtrujú sa markery na mape:
-
-\begin{lstlisting}[language=Kotlin, caption=Aplikovanie filtrov na mapu]
-val criteria = FilterCriteria(
-    name          = name.trim().ifEmpty { null },
-    category      = selectedCategory.ifEmpty { null },
-    maxPrice      = if (maxPrice >= 150f) Double.MAX_VALUE
-                    else maxPrice.toDouble(),
-    maxDistanceKm = if (maxDistance < 50f) maxDistance.toDouble()
-                    else null,
-    refLat        = userLocation?.latitude  ?: 0.0,
-    refLng        = userLocation?.longitude ?: 0.0
-)
-val filtered = EventFilterService(criteria).filter(events)
-markers.values.forEach { it.isVisible = false }
-filtered.forEach { event -> markers[event.id]?.isVisible = true }
-\end{lstlisting}
-
-Výsledok filtra sa prejaví priamo na mape — zobrazia sa len markery eventov
-spĺňajúcich všetky zadané kritériá. Stav filtra sa ukladá do
-\texttt{AppViewModel.filterState}, čím sa zachováva pri navigácii medzi
-obrazovkami.
+  Stav filtra sa ukladá do \texttt{AppViewModel.filterState}, čím sa
+  zachováva pri navigácii medzi obrazovkami.

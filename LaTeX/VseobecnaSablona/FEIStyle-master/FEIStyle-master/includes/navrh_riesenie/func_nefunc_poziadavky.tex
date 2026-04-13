@@ -1,104 +1,53 @@
 \section{Návrh riešenia}
-V tejto sekcii sa budeme venovať samotnému návrhu riešenia našej
-aplikácie začínajúc od funkčných a nefunkčných požiadaviek, cez grafické návrhy a diagrami až po samotnú implemntáciu a testovanie
+V tejto sekcii sa venujeme návrhu riešenia aplikácie, počnúc definíciou funkčných a nefunkčných požiadaviek, cez grafické návrhy a diagramy, až po samotnú implementáciu a testovanie.
 
-\subsection{Funkcionálne a Nefunkcionálne požiadavky}
-Definivanie funkcionálnych a nefunkcionálnych požiadaviek je podstatným krokom návrhu riešenia,
-pretože nám pomáha jasne stanoviť správanie aplikácie ktoré by splnili jej cieľ
+\subsection{Funkcionálne a nefunkcionálne požiadavky}
+Definovanie funkcionálnych a nefunkcionálnych požiadaviek je kľúčovým krokom návrhu, pretože nám pomáha jasne stanoviť správanie aplikácie, ktoré by splnilo jej cieľ.
 
 \subsubsection{Funkcionálne požiadavky}
+Funkcionálne požiadavky definujú správanie systému a služby, ktoré používateľ od systému očakáva. Medzi konkrétne požiadavky navrhovanej aplikácie patrí:
 
-Funkcionálne požiadavky definujú správanie systému a služby, ktoré používateľ od systému očakáva. Ich hlavným cieľom je:
-\begin{enumerate}
-    \item Definovať funkcie, ktoré sa od systému očakávajú.
-    \item Napomôcť k lepšiemu pochopeniu funkcionality systému.
-    \item Identifikovať, čo systém musí alebo nesmie vykonávať.
-    \item Umožniť fungovanie systému (funkčnosť nie je priamo závislá od nefunkcionálnych požiadaviek).
-    \item Zabezpečiť, že systém bude spĺňať reálne potreby používateľov.
-    \item Definovať prvky nevyhnutné pre samotný chod systému.
-    \item Stanoviť povinné body, ktoré musia byť v systéme implementované.
-    \item Zdokumentovať požiadavky, ktoré sú zvyčajne definované priamo používateľom.
-    \item Umožniť vizualizáciu a pochopenie procesov pomocou prípadov použitia (\textit{Use Case}).
-\end{enumerate}
+% Parameter [noitemsep] výrazne zmenší medzery medzi odrážkami
+\begin{itemize}[noitemsep]
+    \item registrácia, prihlásenie a verifikácia používateľa,
+    \item správa profilu (úprava avatara, mena, popisu a kontrola unikátnosti prezývky),
+    \item vytvorenie novej udalosti s detailmi (fotografie, popis, miesto, čas, typ, kapacita),
+    \item správa súkromných udalostí chránených heslom,
+    \item prehliadanie udalostí na interaktívnej mape s automatickým skrývaním neaktuálnych podujatí,
+    \item nastavenie polomeru zobrazovania udalostí v okolí a filtrovanie podľa preferencií,
+    \item potvrdenie účasti a možnosť odhlásenia sa z udalosti,
+    \item systém náhradníkov (Waitlist) s automatickým povýšením po uvoľnení miesta,
+    \item Check-in systém (manuálny a cez QR kód),
+    \item komunikácia medzi účastníkmi podujatia a správa priateľov,
+    \item ukladanie udalostí do zoznamu obľúbených a zobrazenie histórie (navštívené, odporúčané),
+    \item systém hodnotenia a zdieľania (\textit{sharing}) udalostí,
+    \item pozývanie používateľov prostredníctvom e-mailu a správa pozvánok,
+    \item nastavenie času notifikácií a správa upozornení,
+    \item systém nahlasovania nevhodného obsahu a penalizácia používateľov za nedodržanie účasti,
+    \item lokalizácia prostredia aplikácie (zmena jazyka a preklady),
+    \item odporúčací systém pre relevantné podujatia.
+\end{itemize}
 
-\noindent Medzi konkrétne funkcionálne požiadavky navrhovanej aplikácie patrí:
-\begin{itemize}
-    \item registrácia a prihlásenie (login) používateľov,
-    \item verifikácia používateľa pri prihlasovaní,
-    \item možnosť vytvorenia novej udalosti,
-    \item pridávanie podrobností k udalosti (fotografie, popis, miesto konania, čas, typ udalosti, maximálny počet účastníkov a pod.),
-    \item prehliadanie dostupných udalostí na interaktívnej mape,
-    \item nastavenie polomeru (kruhu) pre zobrazovanie udalostí v okolí používateľa,
-    \item filtrovanie udalostí podľa preferencií,
-    \item správa účastníkov (možnosť odstrániť účastníka z vlastnej udalosti),
-    \item ukladanie vybraných udalostí do zoznamu obľúbených,
-    \item zobrazenie histórie (navštívené, odporúčané a nastávajúce udalosti),
-    \item možnosť potvrdenia účasti na udalosti,
-    \item komunikácia s ostatnými účastníkmi podujatia,
-    \item hodnotenie udalostí,
-    \item zdieľanie (\textit{sharing}) podujatí,
-    \item prehliadanie profilov ostatných používateľov,
-    \item pridávanie priateľov,
-    \item správa a nastavenie notifikácií,
-    \item systém nahlasovania nevhodných používateľov alebo udalostí,
-    \item možnosť zmeny jazyka v prostredí aplikácie,
-    \item automatizovaný poradovník náhradníkov (\textit{Waitlist}),
-    \item systém penalizácie alebo zablokovania používateľa, ktorý potvrdil účasť, nedostavil sa a včas sa neodhlásil,
-    \item odporúčací systém,
-    \item možnosť hodnotenia udalostí,
-    \item možnosť odísť z udalosti.
-    \item moznost upravit profil (avatar, meno, popis)
-%    \item  Check-in systém (QR kód + manuálny) — nie je v požiadavkách vôbec
-%    \item  Deadline odhlásenia (cancelDeadlineHours) — súčasť penalizácie ale detailnejšie ako požiadavky
-%    \item  Súkromné eventy s heslom — nie je explicitne v zozname
-%    \item  Pozvánky (Invitation systém — pozvanie konkrétneho usera emailom) — nie je v zozname
-%    \item  Poradovník je v zozname, ale auto-promote (automatické povýšenie z waitlistu pri odchode) je navyše
-%    \item  Zákaz konkrétneho usera z eventu (bannedUsers na evente) — zoznam má len "odstrániť účastníka", nie permanentný ban z eventu
-%    \item  Prijatie/odmietnutie pozvánky
-%    \item  Auto-povýšenie z poradovníka
-%    \item  Auto-ban za 3 nahlásenia
-%    \item  Plánovanie alarmu pre notifikáciu
+\subsubsection{Nefunkcionálne požiadavky}
+Nefunkcionálne požiadavky definujú kvalitatívne vlastnosti a obmedzenia systému:
 
-%
-https://creately.com/diagram/example/gm75skpc1/navigation-diagram
-
-
+\begin{itemize}[noitemsep]
+    \item jasná navigácia v používateľskom rozhraní bez potreby dodatočnej dokumentácie,
+    \item korektné prispôsobenie rozhrania rôznym rozlíšeniam a pomerom strán Android zariadení,
+    \item spracovanie dát a načítanie mapových podkladov v časovom limite do 2 sekúnd,
+    \item garantovaná stabilita procesov na pozadí a spoľahlivosť systému prihlasovania,
+    \item efektívne ukladanie dát s cieľom minimalizácie prenosov v rámci Firebase Firestore,
+    \item energeticky šetrné spracovanie GPS súradníc používateľa,
+    \item korektné vyžadovanie a správa systémových povolení (poloha, galéria, kalendár),
+    \item zabezpečenie osobných údajov a šifrovaná komunikácia medzi klientom a serverom,
+    \item možnosť synchrónneho používania aplikácie na viacerých zariadeniach pod jedným účtom,
+    \item modulárna architektúra kódu umožňujúca jednoduchú rozšíriteľnosť systému,
+    \item automatické zachovanie integrity dát po odstránení udalosti alebo zablokovaní používateľa.
+\end{itemize}
 %  ---poznamky
 %  hodnotit udalost az ked som potvrdil ucast
 %  ulozenie udalosti do oblubenych az po evente ????
-\end{itemize}
 
-
-\subsubsection{Nefunkcionálne požiadavky}
-
-Nefunkcionálne požiadavky definujú kvalitatívne vlastnosti systému a obmedzenia, za ktorých musí systém pracovať. Ich charakteristika je nasledovná:
-\begin{enumerate}
-    \item Vysvetľujú vlastnosti produktu a jeho atribúty kvality.
-    \item Napomáhajú k pochopeniu výkonu a správania systému.
-    \item Identifikujú spôsob, akým má systém stanovené úlohy vykonávať.
-    \item Samotné nefunkcionálne požiadavky bez funkčných nepostačujú na chod systému.
-    \item Zabezpečujú, že systém bude spĺňať špecifické očakávania používateľov na kvalitu.
-    \item Sú žiaduce pre celkový zážitok, hoci v niektorých prípadoch nie sú kritické pre základnú funkcionalitu.
-    \item Ich splnenie zvyšuje konkurencieschopnosť a stabilitu softvéru.
-    \item Zvyčajne ich definujú softvéroví inžinieri, vývojári alebo architekti na základe technických potrieb.
-    \item Možno ich dokumentovať a chápať ako atribúty kvality (napr. bezpečnosť, rýchlosť).
-    \item vymazanie associácie medzi userom a eventom po zablokovaní usera alebo zmazaní eventu
-    \item Automatické skrytie udalostí na mape po datume konania
-\end{enumerate}
-
-\noindent Pre navrhovanú aplikáciu boli definované tieto konkrétne nefunkcionálne požiadavky:
-\begin{itemize}
-    \item \textbf{Intuitívnosť:} Používateľské rozhranie musí byť navrhnuté tak, aby bola navigácia v aplikácii jasná aj bez dodatočnej dokumentácie.
-    \item \textbf{Responzivita:} Rozhranie aplikácie sa musí korektne prispôsobovať rôznym rozlíšeniam a pomerom strán Android zariadení.
-    \item \textbf{Rýchlosť odozvy:} Systém musí zabezpečiť rýchlu odozvu pri načítavaní udalostí z mapy a pri spracovaní dát v odporúčacom algoritme (do 2 sekúnd).
-    \item \textbf{Stabilita a funkčnosť:} Systém musí garantovať spoľahlivé prihlásenie používateľa a stabilitu procesov na pozadí.
-    \item \textbf{Spracovanie a zaznamenávanie dát:} Efektívne ukladanie dát do databázy Firebase Firestore so zreteľom na minimalizáciu dátových prenosov.
-    \item \textbf{Zaznamenávanie polohy:} Presné a šetrné spracovanie GPS súradníc používateľa pre potreby mapy a \textit{Check-inu}.
-    \item \textbf{Správa povolení:} Systém musí korektne vyžadovať a spracovávať povolenia od používateľa (prístup k polohe, galérii a kalendáru).
-    \item \textbf{Ochrana údajov:} Zabezpečenie osobných údajov používateľov a šifrovaná komunikácia medzi klientom a serverom.
-    \item \textbf{Kompatibilita:} Možnosť inštalácie a synchrónneho používania na viacerých Android zariadeniach pod jedným účtom.
-    \item \textbf{Rozšíriteľnosť:} Architektúra kódu musí umožňovať jednoduché pridávanie nových funkcií v budúcnosti bez nutnosti prepisovania jadra aplikácie.
-\end{itemize}
 
 % na doplnenie
 %
@@ -111,6 +60,8 @@ Nefunkcionálne požiadavky definujú kvalitatívne vlastnosti systému a obmedz
 %     \end{itemize}
 %
 %
+
+
 % ///nahlasovaci system
 % Plán
 % Firestore kolekcia reports

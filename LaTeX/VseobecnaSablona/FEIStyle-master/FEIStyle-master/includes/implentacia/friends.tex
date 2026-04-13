@@ -1,164 +1,174 @@
-\subsubsection{Systém priateľstiev}
+\subsubsection{Systém priateľstiev} 
+                                                                                          
+  Systém priateľstiev umožňuje používateľom nadviazať spojenie a komunikovať
+  priamo cez správy. Implementácia pokrýva posielanie žiadostí, ich
+  prijímanie a odmietanie, odstraňovanie priateľov a priamu komunikáciu.
+                                                                                                                                                                                                                                     \iffalse                                                                                                                                                                                                                           \paragraph{Dátový model:}                                                                                                                                                                                                        
+  Každé priateľstvo je reprezentované triedou \texttt{Friendship} a uložené                                                                                                                                                        
+  do Firestore kolekcie \texttt{friendships}:               
 
-Systém priateľstiev umožňuje používateľom nadviazať spojenie a komunikovať
-priamo cez správy. Implementácia pokrýva posielanie žiadostí, ich
-prijímanie a odmietanie, odstraňovanie priateľov a priamu komunikáciu.
+  \begin{lstlisting}[language=Kotlin, caption=Dátová trieda Friendship]
+  data class Friendship(
+      val id         : String = "",
+      val requesterId: String = "",        // kto poslal žiadosť
+      val receiverId : String = "",        // kto prijíma žiadosť
+      val status     : String = "pending", // "pending" | "accepted"
+      val timestamp  : Long   = 0L
+  )
+  \end{lstlisting}
+  \fi                                                                                                                                                                                                                              
 
-\paragraph{Dátový model:}
-Každé priateľstvo je reprezentované triedou \texttt{Friendship} a uložené
-do Firestore kolekcie \texttt{friendships}:
+  Každé priateľstvo je uložené do Firestore kolekcie \texttt{friendships}
+  s poliami \texttt{requesterId}, \texttt{receiverId}, \texttt{status}
+  (\texttt{"pending"} alebo \texttt{"accepted"}) a \texttt{timestamp}.
 
-\begin{lstlisting}[language=Kotlin, caption=Dátová trieda Friendship]
-data class Friendship(
-    val id         : String = "",
-    val requesterId: String = "",        // kto poslal žiadosť
-    val receiverId : String = "",        // kto prijíma žiadosť
-    val status     : String = "pending", // "pending" | "accepted"
-    val timestamp  : Long   = 0L
-)
-\end{lstlisting}
+  \paragraph{Stavy priateľstva:}
+  Pre každú dvojicu používateľov môže existovať práve jeden vzťah.
+  Metóda \texttt{getFriendshipStatus()} vráti jeden zo štyroch stavov
+  uvedených v tabuľke~\ref{tab:friendship-states}:
 
-\paragraph{Stavy priateľstva:}
-Pre každú dvojicu používateľov môže existovať práve jeden vzťah.
-Metóda \texttt{getFriendshipStatus()} vráti jeden zo štyroch stavov
-uvedených v tabuľke~\ref{tab:friendship-states}:
+  \begin{lstlisting}[language=Kotlin, caption=Určenie stavu priateľstva]
+  fun getFriendshipStatus(currentUserId: String, otherUserId: String): String {
+      val f = _friendships.firstOrNull {
+          (it.requesterId == currentUserId && it.receiverId == otherUserId) ||
+          (it.requesterId == otherUserId   && it.receiverId == currentUserId)
+      } ?: return "none"
 
-\begin{lstlisting}[language=Kotlin, caption=Určenie stavu priateľstva]
-fun getFriendshipStatus(currentUserId: String, otherUserId: String): String {
-    val f = _friendships.firstOrNull {
-        (it.requesterId == currentUserId && it.receiverId == otherUserId) ||
-        (it.requesterId == otherUserId   && it.receiverId == currentUserId)
-    } ?: return "none"
+      return when {
+          f.status == "accepted"         -> "friends"
+          f.requesterId == currentUserId -> "pending_sent"
+          else                           -> "pending_received"
+      }
+  }
+  \end{lstlisting}
 
-    return when {
-        f.status == "accepted"         -> "friends"
-        f.requesterId == currentUserId -> "pending_sent"
-        else                           -> "pending_received"
-    }
-}
-\end{lstlisting}
+  \begin{table}[h]
+      \centering                                                                                                                                                                                                                   
+      \caption{Stavy priateľstva}
+      \label{tab:friendship-states}
+      \begin{tabular}{ll}
+          \toprule                                                                                                                                                                                                                 
+          \textbf{Stav} & \textbf{Význam} \\                                                                                                                                                                                       
+          \midrule                                                                                                                                                                                                                 
+          \texttt{none}              & Žiadny vzťah medzi používateľmi. \\                                                                                                                                                         
+          \texttt{pending\_sent}     & Aktuálny používateľ poslal žiadosť. \\                                                                                                                                                      
+          \texttt{pending\_received} & Aktuálny používateľ dostal žiadosť. \\                                                                                                                                                      
+          \texttt{friends}           & Priateľstvo je akceptované. \\                                                                                                                                                              
+          \bottomrule                                                                                                                                                                                                              
+      \end{tabular}
+  \end{table}
 
-\begin{table}[h]
-    \centering
-    \caption{Stavy priateľstva}
-    \label{tab:friendship-states}
-    \begin{tabular}{ll}
-        \toprule
-        \textbf{Stav} & \textbf{Význam} \\
-        \midrule
-        \texttt{none}             & Žiadny vzťah medzi používateľmi. \\
-        \texttt{pending\_sent}     & Aktuálny používateľ poslal žiadosť. \\
-        \texttt{pending\_received} & Aktuálny používateľ dostal žiadosť. \\
-        \texttt{friends}           & Priateľstvo je akceptované. \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+  Stav sa využíva v \texttt{PublicProfileScreen} na zobrazenie správneho
+  tlačidla — „Pridať priateľa", „Žiadosť odoslaná", „Prijať\,/\,Odmietnuť"
+  alebo „Odstrániť priateľa".
 
-Stav sa využíva v \texttt{PublicProfileScreen} na zobrazenie správneho
-tlačidla — „Pridať priateľa", „Žiadosť odoslaná", „Prijať\,/\,Odmietnuť"
-alebo „Odstrániť priateľa".
+  \paragraph{Načítanie priateľstiev:}
+  Pri prihlásení sa načítajú všetky dokumenty, kde je používateľ buď
+  odosielateľom alebo prijímateľom. Odmietnuté žiadosti sa nenačítavajú —
+  zabraňuje sa tým opakovanému posielaniu žiadostí od toho istého
+  používateľa:
 
-\paragraph{Načítanie priateľstiev:}
-Pri prihlásení sa načítajú všetky dokumenty, kde je používateľ buď
-odosielateľom alebo prijímateľom. Odmietnuté žiadosti sa nenačítavajú —
-zabraňuje sa tým opakovanému posielaniu žiadostí od toho istého
-používateľa:
+  \begin{lstlisting}[language=Kotlin, caption=Načítanie priateľstiev z Firestore]
+  fun loadFriendships(uid: String) {
+      val sent     = db.collection("friendships")
+          .whereEqualTo("requesterId", uid).get().await()
+      val received = db.collection("friendships")
+          .whereEqualTo("receiverId",  uid).get().await()
+      (sent.documents + received.documents).forEach { doc ->
+          val f = Friendship.fromFirestore(doc.id, doc.data!!)
+          if (f.status != "declined") _friendships.add(f)
+      }
+  }
+  \end{lstlisting}
 
-\begin{lstlisting}[language=Kotlin, caption=Načítanie priateľstiev z Firestore]
-fun loadFriendships(uid: String) {
-    val sent     = db.collection("friendships")
-        .whereEqualTo("requesterId", uid).get().await()
-    val received = db.collection("friendships")
-        .whereEqualTo("receiverId",  uid).get().await()
-    (sent.documents + received.documents).forEach { doc ->
-        val f = Friendship.fromFirestore(doc.id, doc.data!!)
-        if (f.status != "declined") _friendships.add(f)
-    }
-}
-\end{lstlisting}
+  \paragraph{Odoslanie žiadosti:}
+  Pred vytvorením novej žiadosti sa skontroluje, či medzi dvojicou
+  používateľov už vzťah existuje:
 
-\paragraph{Odoslanie žiadosti:}
-Pred vytvorením novej žiadosti sa skontroluje, či medzi dvojicou
-používateľov už vzťah existuje:
+  \begin{lstlisting}[language=Kotlin, caption=Odoslanie žiadosti o priateľstvo]
+  fun sendFriendRequest(fromId: String, toId: String) {
+      val alreadyExists = _friendships.any {
+          (it.requesterId == fromId && it.receiverId == toId) ||
+          (it.requesterId == toId   && it.receiverId == fromId)
+      }
+      if (alreadyExists) {
+          friendshipError = "Žiadosť o priateľstvo už existuje."
+          return
+      }
+      val friendship = Friendship(
+          id          = docRef.id,
+          requesterId = fromId,
+          receiverId  = toId,
+          status      = "pending",
+          timestamp   = System.currentTimeMillis()
+      )
+      docRef.set(friendship.toMap()).await()
+      _friendships.add(friendship)
+  }
+  \end{lstlisting}
 
-\begin{lstlisting}[language=Kotlin, caption=Odoslanie žiadosti o priateľstvo]
-fun sendFriendRequest(fromId: String, toId: String) {
-    val alreadyExists = _friendships.any {
-        (it.requesterId == fromId && it.receiverId == toId) ||
-        (it.requesterId == toId   && it.receiverId == fromId)
-    }
-    if (alreadyExists) {
-        friendshipError = "Žiadosť o priateľstvo už existuje."
-        return
-    }
-    val friendship = Friendship(
-        id          = docRef.id,
-        requesterId = fromId,
-        receiverId  = toId,
-        status      = "pending",
-        timestamp   = System.currentTimeMillis()
-    )
-    docRef.set(friendship.toMap()).await()
-    _friendships.add(friendship)
-}
-\end{lstlisting}
+  \paragraph{Odpoveď na žiadosť:}
+  Pri prijatí sa stav aktualizuje na \texttt{accepted}; pri odmietnutí
+  sa dokument z Firestore aj z lokálnej pamäte vymaže:
 
-\paragraph{Odpoveď na žiadosť:}
-Pri prijatí sa stav aktualizuje na \texttt{accepted}; pri odmietnutí
-sa dokument z Firestore aj z lokálnej pamäte vymaže:
+  \begin{lstlisting}[language=Kotlin, caption=Prijatie alebo odmietnutie žiadosti]
+  fun respondToFriendRequest(friendshipId: String, accept: Boolean) {
+      if (accept) {
+          db.collection("friendships").document(friendshipId)
+              .update("status", "accepted").await()
+          _friendships[idx] = _friendships[idx].copy(status = "accepted")
+      } else {
+          db.collection("friendships").document(friendshipId)
+              .delete().await()
+          _friendships.removeAll { it.id == friendshipId }
+      }
+  }
+  \end{lstlisting}
 
-\begin{lstlisting}[language=Kotlin, caption=Prijatie alebo odmietnutie žiadosti]
-fun respondToFriendRequest(friendshipId: String, accept: Boolean) {
-    if (accept) {
-        db.collection("friendships").document(friendshipId)
-            .update("status", "accepted").await()
-        _friendships[idx] = _friendships[idx].copy(status = "accepted")
-    } else {
-        db.collection("friendships").document(friendshipId)
-            .delete().await()
-        _friendships.removeAll { it.id == friendshipId }
-    }
-}
-\end{lstlisting}
+  \iffalse                                                                                                                                                                                                                         
+  \paragraph{Odstránenie priateľa:}
+  Metóda \texttt{removeFriend()} vyhľadá akceptované priateľstvo medzi
+  dvojicou a vymaže ho z Firestore aj z lokálnej pamäte:
 
-\paragraph{Odstránenie priateľa:}
-Metóda \texttt{removeFriend()} vyhľadá akceptované priateľstvo medzi
-dvojicou a vymaže ho z Firestore aj z lokálnej pamäte:
+  \begin{lstlisting}[language=Kotlin, caption=Odstránenie priateľa]
+  fun removeFriend(currentUserId: String, otherUserId: String) {
+      val f = _friendships.firstOrNull {
+          it.status == "accepted" &&                                                                                                                                                                                               
+          ((it.requesterId == currentUserId && it.receiverId == otherUserId) ||
+           (it.requesterId == otherUserId   && it.receiverId == currentUserId))
+      } ?: return
+      _friendships.remove(f)
+      db.collection("friendships").document(f.id).delete().await()
+  }
+  \end{lstlisting}
+  \fi                                                                                                                                                                                                                              
 
-\begin{lstlisting}[language=Kotlin, caption=Odstránenie priateľa]
-fun removeFriend(currentUserId: String, otherUserId: String) {
-    val f = _friendships.firstOrNull {
-        it.status == "accepted" &&
-        ((it.requesterId == currentUserId && it.receiverId == otherUserId) ||
-         (it.requesterId == otherUserId   && it.receiverId == currentUserId))
-    } ?: return
-    _friendships.remove(f)
-    db.collection("friendships").document(f.id).delete().await()
-}
-\end{lstlisting}
+  Odstránenie priateľa (\texttt{removeFriend()}) funguje rovnakým spôsobom
+  — vyhľadá akceptované priateľstvo a vymaže ho z Firestore aj z lokálnej
+  pamäte.
 
-\paragraph{Priama komunikácia:}
-Priatelia si môžu písať správy cez \texttt{FriendChatScreen}. ID
-konverzácie sa generuje deterministicky zo zoradených UID oboch
-používateľov — zaručuje sa tak, že obaja vždy pristupujú k tomu istému
-dokumentu bez ohľadu na to, kto rozhovor začal:
+  \paragraph{Priama komunikácia:}
+  Priatelia si môžu písať správy cez \texttt{FriendChatScreen}. ID
+  konverzácie sa generuje deterministicky zo zoradených UID oboch
+  používateľov — zaručuje sa tak, že obaja vždy pristupujú k tomu istému
+  dokumentu bez ohľadu na to, kto rozhovor začal:
 
-\begin{lstlisting}[language=Kotlin, caption=Deterministické generovanie ID konverzácie]
-private fun directConversationId(uid1: String, uid2: String) =
-    if (uid1 < uid2) "${uid1}_${uid2}" else "${uid2}_${uid1}"
-\end{lstlisting}
+  \begin{lstlisting}[language=Kotlin, caption=Deterministické generovanie ID konverzácie]
+  private fun directConversationId(uid1: String, uid2: String) =
+      if (uid1 < uid2) "${uid1}_${uid2}" else "${uid2}_${uid1}"
+  \end{lstlisting}
 
-Správy sa ukladajú do Firestore kolekcie
-\texttt{directMessages/\{conversationId\}/messages} a synchronizujú sa
-v reálnom čase cez \texttt{snapshotListener} — rovnaký mechanizmus
-ako chat v udalostiach.
+  Správy sa ukladajú do Firestore kolekcie
+  \texttt{directMessages/\{conversationId\}/messages} a synchronizujú sa
+  v reálnom čase cez \texttt{snapshotListener} — rovnaký mechanizmus
+  ako chat v udalostiach.
 
-\paragraph{Používateľské rozhranie:}
-Obrazovka \texttt{FriendsScreen} je dostupná z bočného menu pod položkou
-„Priatelia" a je rozdelená do dvoch sekcií:
-\begin{itemize}
-    \item \textbf{Žiadosti o priateľstvo} — zobrazujú sa len ak existujú,
-          s tlačidlami „Prijať" a „Odmietnuť".
-    \item \textbf{Priatelia} — zoznam akceptovaných priateľov s možnosťou
-          otvoriť priamu konverzáciu alebo priateľa odstrániť.
-\end{itemize}
+  \paragraph{Používateľské rozhranie:}
+  Obrazovka \texttt{FriendsScreen} je dostupná z bočného menu pod položkou
+  „Priatelia" a je rozdelená do dvoch sekcií:
+  \begin{itemize}
+      \item \textbf{Žiadosti o priateľstvo} — zobrazujú sa len ak existujú,
+            s tlačidlami „Prijať" a „Odmietnuť".
+      \item \textbf{Priatelia} — zoznam akceptovaných priateľov s možnosťou
+            otvoriť priamu konverzáciu alebo priateľa odstrániť.
+  \end{itemize}

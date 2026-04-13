@@ -4,8 +4,10 @@
 \section{Základné pojmy}
 V tejto kapitole sa zameriame na všeobecné pojmy a technológie, ktoré sú kľúčové pre správne pochopenie problematiky vývoja mobilných aplikácií a implementácie odporúčacích systémov. Cieľom je poskytnúť čitateľovi pevný základ, na ktorom bude možné stavať v ďalších častiach práce.
 
+\iffalse
 \subsection{Architektúra a komunikácia v distribuovaných systémoch}
 Základom modernej sieťovej komunikácie je efektívne rozdelenie úloh medzi jednotlivé uzly v sieti. Tento prístup umožňuje lepšiu správu zdrojov a vysokú škálovateľnosť aplikácií.
+
 
 \subsubsection{Klient-server architektúra}
 Architektúra klient-server predstavuje systém, ktorý vykonáva funkcie klienta aj servera s cieľom podporiť zdieľanie informácií medzi nimi. Tento model umožňuje viacerým používateľom pristupovať k rovnakej databáze v rovnakom čase, pričom databáza slúži na ukladanie veľkého množstva informácií \cite{sulyman2014}.
@@ -15,6 +17,7 @@ Architektúra klient-server predstavuje systém, ktorý vykonáva funkcie klient
     \item \textbf{Server:} Predstavuje počítač alebo softvérový systém, ktorý poskytuje dáta, zdroje alebo služby iným počítačom v sieti, ktoré označujeme ako klienti. \\ (Zdroj: \url{https://en.wikipedia.org/wiki/Server_(computing)})
     \item \textbf{Klient:} Ide o kus počítačového hardvéru alebo softvéru, ktorý pristupuje k službe sprístupnenej serverom v rámci modelu klient-server v počítačových sieťach. \\ (Zdroj: \url{https://en.wikipedia.org/wiki/Client_(computing)})
 \end{itemize}
+
 
 \subsubsection{Komunikačné rozhrania a protokoly (REST API a HTTP)}
 Na to, aby si klient a server v distribuovanom systéme rozumeli, potrebujú spoločný komunikačný štýl a protokol. V súčasnosti je najrozšírenejším štandardom rozhranie \foreignlanguage{english}{Representational State Transfer} (REST API). Ide o aplikačné programové rozhranie, ktoré vyhovuje princípom architektonického štýlu REST. Jeho podstata spočíva v práci so zdrojmi, ktorými môže byť akákoľvek informácia, napríklad používateľ, produkt alebo dokument \cite{google_cloud_rest}.
@@ -54,8 +57,7 @@ Na rozdiel od tabuliek ukladajú dáta flexibilne, najčastejšie ako \textbf{do
 Špeciálny typ databázy, ktorý \textbf{okamžite synchronizuje zmeny} medzi serverom a všetkými pripojenými používateľmi bez nutnosti obnovovania aplikácie. Je to základ pre funkcie ako chaty alebo živé aktualizácie obsahu \cite{firebase_db}.
 \\ (Zdroj: \url{https://firebase.google.com/docs/database})
 
-
-
+ \fi
 
 \subsubsection{Autentifikácia}
 Autentifikácia je proces overenia používateľa (overenia jeho identity), teda zistenie, o koho ide. Môže sa to overiť podľa kombinácie mena a hesla, biometrie (napr. otlačku prsta alebo rozpoznania hlasu), alebo iným zariadením. 
@@ -72,12 +74,12 @@ V informatike delíme spôsoby overenia používateľa do troch základných kat
 
 Pre dosiahnutie vysokej bezpečnosti sa odporúča \textbf{viacfaktorové overenie} (MFA), ktoré kombinuje aspoň dva z vyššie uvedených faktorov. V mobilných zariadeniach sa čoraz častejšie využíva aj tzv. \textbf{kontinuálne overovanie}, ktoré neustále monitoruje identitu používateľa na základe biometrie správania (napr. štýl písania alebo dynamika dotyku). 
 
-\subsubsection{Digitálna autentifikácia a bezpečnosť}
+\iffalse\subsubsection{Digitálna autentifikácia a bezpečnosť}
 Proces digitálneho overovania pozostáva z prihlásenia (vytvorenie poverení) a samotnej autentifikácie (predloženie dôkazu identity, napr. tokenu). Pri sieťovej komunikácii je kľúčové chrániť tento proces pred útokmi typu \textit{Man-in-the-Middle} (MITM), kedy sa útočník snaží zachytiť prenášané údaje. 
 \\ (Zdroj: \url{https://sk.wikipedia.org/wiki/Autentifikácia})
+\fi
 
 \subsubsection{Autorizácia}
-
 Autorizácia je proces overenia oprávnení pre danú úlohu, teda či autentifikovaný používateľ (systém) má oprávnenie vykonať úlohu, o ktorú žiada (napr. vstúpiť do systému alebo vykonať platobnú operáciu).
 \subsubsection{Mechanizmus trvalého prihlásenia (Token-based Authentication)}
 V moderných mobilných aplikáciách je žiaduce, aby používateľ nebol nútený zadávať prihlasovacie údaje pri každom otvorení aplikácie. Tento proces sa nazýva \textit{perzistentná autentifikácia} a je realizovaný pomocou systému dvoch typov tokenov (bezpečnostných kľúčov):
@@ -90,13 +92,25 @@ V moderných mobilných aplikáciách je žiaduce, aby používateľ nebol núte
 Tento cyklus prebieha na pozadí bez zásahu používateľa (tzv. \textit{Silent Re-authentication}). Ak je \textit{Refresh Token} stále platný, aplikácia automaticky obnoví reláciu, čím zabezpečí plynulý používateľský zážitok pri zachovaní vysokej bezpečnosti, keďže samotné heslo sa sieťou prenáša iba raz – pri prvotnom prihlásení.
 \\ (Zdroj: \url{https://auth0.com/docs/secure/tokens/refresh-tokens})
 
+\subsubsection{Technológia QR kódov a ich štruktúra}
+QR kód (\textit{Quick Response Code}) predstavuje dvojrozmerný (2D) čiarový kód, ktorý bol navrhnutý pre vysokorýchlostné čítanie a veľkú kapacitu dát v porovnaní s tradičnými 1D kódmi. Podľa \cite{7966807} je jeho štruktúra definovaná niekoľkými kľúčovými prvkami, ktoré umožňujú spoľahlivú detekciu aj pri čiastočnom poškodení alebo zlej kvalite obrazu:
 
+\begin{itemize}
+\item \textbf{Vyhľadávacie vzory (Finder Patterns):} Tri identické štvorcové štruktúry v rohoch kódu, ktoré umožňujú skeneru identifikovať polohu a orientáciu kódu v 360-stupňovom rozsahu.
+\item \textbf{Korekcia chýb (Error Correction):} Využitie algoritmu \textit{Reed-Solomon}, ktorý umožňuje obnoviť dáta aj v prípade, že je kód znečistený alebo poškodený (v závislosti od úrovne až do 30 % plochy).
+\item \textbf{Dátová kapacita:} Na rozdiel od lineárnych kódov dokáže QR kód uchovávať tisíce alfanumerických znakov, čo je kľúčové pre kódovanie komplexných URL adries alebo unikátnych identifikátorov podujatí.
+\end{itemize}
 
+V kontexte mobilnej aplikácie slúži táto technológia ako efektívny nástroj na automatizáciu interakcie, napríklad pri procese registrácie účastníka na podujatie (Check-in), kde nahrádza manuálne zadávanie údajov.
+%(Zdroj: \url{https://ieeexplore.ieee.org/abstract/document/7966807}
+  \iffalse
 \subsection{Vývoj mobilných aplikácií}
+
 
 \subsubsection{Mobilná aplikácia}
 Mobilná aplikácia je softvérová aplikácia vytvorená špecificky pre smartfóny, tablety alebo iné mobilné zariadenia, ktorá si vyžaduje inštaláciu, čím sa líši od bežného webu. V prvom rade vďaka nim dokážeme rozlíšiť smartfón od bežného telefónu.
 \\ (Zdroj: \url{https://www.eliteml.sk/blog/mobilne-aplikacie-v-skratke/})
+
 
 \subsubsection{Programovacie jazyky}
 Programovací jazyk obsahuje inštrukcie vytvorené programátormi, ktoré riadia počítač pri vykonávaní konkrétnych úloh. Tieto inštrukcie, bežne vnímané ako komplexný kód, dodržiavajú odlišnú syntax špecifickú pre každý programovací jazyk a slúžia ako nevyhnutné nástroje pre vývoj softvéru a rôzne výpočtové úlohy.
@@ -119,7 +133,7 @@ Medzi najpoužívanejšie prostredia pre mobilný vývoj patria napríklad \text
 \\ (Zdroj: \url{https://it-slovnik.cz/pojem/ide-integrovane-vyvojove-prostredi})
 %geminy 29.03.2026 8.27 napis mi nieco o prostredi 
 
-
+  \fi
 
 \subsubsection{Prístupy k vývoju mobilných aplikácií}
 Podľa spoločnosti IBM možno proces vývoja mobilných aplikácií definovať ako tvorbu softvéru navrhnutého špecificky pre mobilné koncové zariadenia, pričom kľúčovým rozhodnutím je technológia implementácie. V súčasnosti sa vývojári rozhodujú primárne medzi natívnym a multiplatformovým prístupom \cite{pullur_medium_2025}:
@@ -132,8 +146,7 @@ Podľa spoločnosti IBM možno proces vývoja mobilných aplikácií definovať 
 (Zdroj: \url{https://opac.crzp.sk/?fn=detailBiblioFormChildO1BU&sid=9A7D98113A4E7D6F09AF71A0EB46&seo=CRZP-detail-kniha})
 
 
-
-\subsubsection{Technické obmedzenia a optimalizácia výkonu}
+  \iffalse\subsubsection{Technické obmedzenia a optimalizácia výkonu}
 Vývoj pre mobilné platformy vyžaduje špecifický prístup k správe prostriedkov, ktoré sú v porovnaní s desktopovými systémami limitované:
 
 \begin{enumerate}
@@ -145,6 +158,7 @@ Vývoj pre mobilné platformy vyžaduje špecifický prístup k správe prostrie
 \subsubsection{Distribúcia a ekosystém platforiem}
 Platforma Android, s približne 70 \% trhovým podielom, je často preferovaná pre nasadenie MVP kvôli flexibilnejším pravidlám. Naopak, ekosystém iOS vyžaduje striktnejšie dodržiavanie štandardov. Multiplatformové nástroje ako Flutter a React Native umožňujú súčasné nasadenie na oboch platformách s určitým kompromisom v oblasti výkonu.
 \\ (Zdroj: \url{https://medium.com/@riyaspullurofficial/native-vs-cross-platform-app-size-and-performance-comparison-550cb7f918b0})
+
 
 \begin{table}[h!]
 \centering
@@ -158,7 +172,7 @@ Zdieľanie kódu & Žiadne & 95 \% + & 90 \% + & Logika \\ \hline
 Spotreba batérie & \textbf{Nízka} & Stredná & Vysoká & Nízka \\ \hline
 \end{tabular}
 \end{table}
-
+  \fi
 %\url{https://www.ibm.com/think/topics/mobile-application-development}
 %https://medium.com/@riyaspullurofficial/native-vs-cross-platform-app-size-and-performance-comparison-550cb7f918b0 
 
@@ -171,7 +185,6 @@ Geolokácia je proces identifikácie geografickej polohy zariadenia. Podľa anal
     \item \textbf{BLE (Bluetooth Low Energy):} Využíva malé vysielače (beacons). Poskytuje extrémnu presnosť v interiéroch (napr. sklady), ale vyžaduje inštaláciu fyzických zariadení v priestore.
     \item \textbf{LPWAN Geolocation:} Využíva nízkoenergetické siete (napr. Sigfox) na trianguláciu signálu. Má najdlhšiu výdrž batérie (roky), ale nižšiu presnosť (stovky metrov).
 \end{itemize}
-
 
 
 \subsubsection{Operačná efektivita a hybridný prístup}
@@ -192,10 +205,6 @@ Na výpočet presnej polohy zariadenia zo získaných signálov (rádiových, sa
 
 Tieto metódy sú matematickým základom pre fungovanie GPS (prevažne TOA/TDOA) aj moderných systémov pre lokalizáciu v interiéroch.
  % https://books.google.sk/books?hl=sk&lr=&id=tvCJLFLRwzcC&oi=fnd&pg=PR6&dq=geolocation+&ots=Ty6crjz0u0&sig=dV6M3WoE0CxhDM4RKgrIVi5UV0A&redir_esc=y#v=onepage&q=geolocation&f=false
-
-\subsection{Metódy verifikácie účasti na podujatí}
-
-
 
 
 \subsection{Definícia a význam odporúčacích systémov}
@@ -289,6 +298,7 @@ Pre efektívne fungovanie vyššie spomínaných modelov sa využívajú špecif
 
 %https://www.mdpi.com/2079-9292/11/1/141
 
+\iffalse
 \subsubsection{Dizajn a používateľská skúsenosť (UX/UI)}
 
 Pri vývoji mobilnej aplikácie nie je kľúčová len funkčná stránka (backend), ale aj spôsob, akým používateľ s aplikáciou interaguje. Návrh používateľského rozhrania sa riadi dvoma základnými disciplínami:
@@ -298,7 +308,7 @@ Pri vývoji mobilnej aplikácie nie je kľúčová len funkčná stránka (backe
     \item \textbf{UI (User Interface):} Rieši vizuálnu stránku aplikácie – farby, typografiu, ikony a rozloženie prvkov na obrazovke.
 \end{itemize}
 %geminy odpoved 29.03.2026 6:36
-
+ \fi
 
 \subsection{Architektonické vzory a princípy návrhu}
 Úspešná mobilná aplikácia musí byť postavená na robustnej architektúre, ktorá zaručuje jej škálovateľnosť a udržateľnosť v ekosystéme rôznych zariadení (telefóny, tablety, ChromeOS či skladacie zariadenia). Podľa oficiálnej dokumentácie spoločnosti Google je základným cieľom architektúry definovať hranice medzi jednotlivými časťami aplikácie a jasne určiť ich zodpovednosť.
@@ -312,8 +322,6 @@ Pred definovaním konkrétnych vzorov je potrebné určiť pravidlá, ktoré mus
     \item \textbf{Single Source of Truth (SSOT - Jednotný zdroj pravdy):} Každý dátový typ má priradeného svojho vlastníka, ktorý ako jediný môže dáta modifikovať. Zmeny sa následne propagujú prostredníctvom imutabilných typov, čo znižuje výskyt chýb a uľahčuje ladenie systému.
     \item \textbf{Unidirectional Data Flow (UDF - Jednosmerný tok dát):} Stav aplikácie prúdi smerom nadol (od SSOT k UI elementom) a udalosti/akcie prúdia smerom nahor. Tento vzor zaručuje konzistenciu dát v celom systéme.
 \end{itemize}
-
-
 
 \subsection{Porovnanie architektonických vzorov}
 V histórii vývoja platformy Android sa vyvinulo niekoľko prístupov k organizácii kódu, ktoré reagovali na narastajúcu komplexnosť aplikácií:

@@ -1,0 +1,221 @@
+\subsection{Odporúčací systém}                                                                                                                                                                                                   
+                                                                                          
+  Pre aplikáciu Joinly sme zvolili \textbf{Weighted Hybrid System} —
+  váhový hybridný systém kombinujúci tri prístupy:
+                                          
+  \begin{itemize}                                                                                                                                                                                                                  
+      \item \textbf{Content-Based} — odporúčania na základe kategórií                                                                                                                                                                          navštívených eventov,                                                                                                                                                                                                  
+      \item \textbf{Kontextový} — zohľadňuje vzdialenosť, čas a popularitu,                                                                                                                                                        
+      \item \textbf{Explicitná spätná väzba} — bonus za eventy z obľúbených
+            kategórií.
+  \end{itemize}
+
+  Každý z týchto prístupov prispieva do výsledného skóre s nastaviteľnou
+  váhou, ktorú si používateľ môže upraviť priamo v aplikácii pomocou sliderov.
+
+  \paragraph{Prečo hybridný systém?}
+  \begin{enumerate}
+      \item \textbf{Kvalitné metadáta} — každý event má kategóriu,
+            podkategóriu, lokáciu a hodnotenie.
+      \item \textbf{Menšia používateľská báza} — Collaborative filtering
+            vyžaduje veľké množstvo používateľov; hybridný prístup funguje
+            aj bez nich.
+      \item \textbf{Vysvetliteľnosť} — systém dokáže zdôvodniť odporúčanie
+            (napr.\ „odporúčame ti toto, lebo máš rád športové eventy").
+      \item \textbf{Flexibilita} — používateľ si sám nastaví čo je pre neho
+            dôležitejšie (blízkosť vs.\ kategória vs.\ popularita).
+      \item \textbf{Real-time výpočet} — skóre sa počíta za behu,
+            nevyžadujú sa predpočítané modely.
+  \end{enumerate}
+
+  \paragraph{Dvojúrovňové kategórie:}
+  Štandardný Content-Based systém používa jednu úroveň kategórií.
+  V našom systéme sú kategórie dvojúrovňové:
+  \begin{enumerate}
+      \item \textbf{Hlavná kategória} — široká skupina (napr.\ \textit{Sports}),
+      \item \textbf{Podkategória} — špecifická (napr.\ \textit{Cycling sports}).
+  \end{enumerate}
+
+  Toto umožňuje presnejšie odporúčania — používateľ, ktorý navštívil
+  cyklistický event, dostane bonus pre ďalšie cyklistické eventy, nie len
+  všeobecne športové. Previazanie medzi úrovňami zabezpečuje trieda
+  \textbf{CategoryMapper}.
+
+  % ═══════════════════════════════════════════════════════════════════════                                                                                                                                                        
+  \subsubsection{Váhy a výsledné skóre}
+  % ═══════════════════════════════════════════════════════════════════════                                                                                                                                                        
+
+  Systém používa 6 faktorov, každý s vlastnou váhou. Predvolené hodnoty
+  sú definované v dátovej triede \texttt{RecommendationWeights}:
+
+  \begin{lstlisting}[language=Kotlin, caption=Predvolené váhy odporúčacieho systému]
+  data class RecommendationWeights(
+      val mainCategory  : Float = 0.20f,  // 20 %                                                                                                                                                                                  
+      val subCategory   : Float = 0.16f,  // 16 %                                                                                                                                                                                  
+      val distance      : Float = 0.16f,  // 16 %                                                                                                                                                                                  
+      val rating        : Float = 0.16f,  // 16 %                                                                                                                                                                                  
+      val popularity    : Float = 0.16f,  // 16 %                                                                                                                                                                                  
+      val favoriteBonus : Float = 0.16f   // 16 %                                                                                                                                                                                  
+  )
+  \end{lstlisting}
+
+  Hlavná kategória má mierne vyššiu váhu (20\,\%) pretože je
+  najspoľahlivejším indikátorom záujmu používateľa.
+
+  \paragraph{Normalizácia váh:}
+  Keďže súčet váh musí byť vždy rovný 1 (100\,\%), systém hodnoty
+  automaticky normalizuje po každej zmene slidera:
+
+  \begin{lstlisting}[language=Kotlin, caption=Normalizácia váh]
+  fun normalized(): RecommendationWeights {
+      val sum = mainCategory + subCategory + distance +
+                rating + popularity + favoriteBonus
+      if (sum == 0f) return RecommendationWeights()
+      return RecommendationWeights(
+          mainCategory  = mainCategory  / sum,
+          subCategory   = subCategory   / sum,
+          distance      = distance      / sum,
+          rating        = rating        / sum,
+          popularity    = popularity    / sum,
+          favoriteBonus = favoriteBonus / sum
+      )
+  }
+  \end{lstlisting}
+
+  \begin{equation}
+  \sum_{i=1}^{6} w_i = 1{,}0 \quad \text{(vždy 100\,\%)}
+  \end{equation}
+
+  \paragraph{Vzorec celkového skóre:}
+
+  \begin{equation}
+  \boxed{
+  Score = w_1 \cdot C_{main} + w_2 \cdot C_{sub} + w_3 \cdot D +
+          w_4 \cdot R + w_5 \cdot P + w_6 \cdot B_{fav}
+  }
+  \end{equation}
+
+  Kde:
+  \begin{itemize}
+      \item $w_1 \ldots w_6$ — nastaviteľné váhy (súčet = 1,0),
+      \item $C_{main}$ — skóre hlavnej kategórie $(0{,}0 - 1{,}0)$,
+      \item $C_{sub}$ — skóre podkategórie $(0{,}0 - 1{,}0)$,
+      \item $D$ — skóre vzdialenosti $(0{,}0 - 1{,}0)$,
+      \item $R$ — skóre ratingu $(0{,}0 - 1{,}0)$,
+      \item $P$ — skóre popularity $(0{,}0 - 1{,}0)$,
+      \item $B_{fav}$ — bonus za obľúbenú kategóriu $(0{,}0 - 1{,}0)$.
+  \end{itemize}
+
+  Keďže každý faktor je v rozsahu $0{,}0 - 1{,}0$ a súčet váh je vždy
+  1,0, výsledné skóre je garantovane v rozsahu:
+
+  \begin{equation}
+  0{,}0 \leq Score \leq 1{,}0
+  \end{equation}
+
+  % ═══════════════════════════════════════════════════════════════════════                                                                                                                                                        
+  \subsubsection{Jednotlivé faktory}
+  % ═══════════════════════════════════════════════════════════════════════                                                                                                                                                        
+
+  \paragraph{Hlavná kategória ($C_{main}$):}
+  Systém zostaví profil používateľa z navštívených eventov — koľko percent
+  navštívených eventov patrilo do ktorej kategórie. Skóre sa vypočíta
+  nasledovne:
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre hlavnej kategórie]
+  var mainMatch = userProfile[mainCategory] ?: 0.0
+  if (userProfile.isEmpty()) mainMatch = 0.5   // novy pouzivatel
+  else if (mainMatch == 0.0) mainMatch = 0.05  // nikdy nenavstivena
+
+  val mainScore = mainMatch * w.mainCategory
+  \end{lstlisting}
+
+  \begin{itemize}
+      \item Ak používateľ navštívil 10 eventov, z toho 4 boli „Sports"
+            $\rightarrow$ preferencia Sports = 40\,\% $(C_{main} = 0{,}4)$.
+      \item Pre nových používateľov (bez histórie) $\rightarrow$                                                                                                                                                                   
+            $C_{main} = 0{,}5$ (neutrálne skóre).
+      \item Pre nikdy nenavštívenú kategóriu $\rightarrow$                                                                                                                                                                         
+            $C_{main} = 0{,}05$ (aby systém nevrátil prázdny zoznam).
+  \end{itemize}
+
+  \paragraph{Podkategória ($C_{sub}$):}
+  Funguje rovnako ako hlavná kategória, ale na úrovni podkategórií.
+  Skóre podkategórie dopĺňa hlavnú kategóriu a umožňuje rozlišovať
+  medzi napríklad cyklistickými a plaveckými eventmi v rámci rovnakej
+  skupiny Sports.
+
+  \paragraph{Vzdialenosť ($D$):}
+  Vzdialenosť sa počíta Haversinovým vzorcom (popísaným v sekcii
+  filtrovania) a normalizuje sa tak, aby bližšie eventy dostávali
+  vyššie skóre:
+
+  \begin{equation}
+  D = \frac{1}{1 + \frac{distance}{10}}
+  \end{equation}
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre vzdialenosti]
+  val distance  = haversineKm(userLat, userLng,
+                               event.latitude, event.longitude)
+  val distScore = (1.0 / (1.0 + distance / 10.0)) * w.distance
+  \end{lstlisting}
+
+  Príklady normalizovaných hodnôt:
+  \begin{itemize}
+      \item 0\,km $\rightarrow$ skóre 1,0
+      \item 5\,km $\rightarrow$ skóre 0,67
+      \item 10\,km $\rightarrow$ skóre 0,5
+      \item 20\,km $\rightarrow$ skóre 0,33
+  \end{itemize}
+
+  \paragraph{Rating ($R$):}
+  Hodnotenie eventu sa normalizuje do rozsahu $0{,}0 - 1{,}0$. Eventy
+  bez hodnotení dostanú neutrálne skóre 0,5, čím sa zabraňuje ich
+  nespravodlivému penalizovaniu:
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre ratingu]
+  val ratingScore = if (event.totalRatings > 0) {
+      (event.rating / 5.0) * w.rating
+  } else {
+      0.5 * w.rating  // novy event bez hodnoteni = neutralne skore
+  }
+  \end{lstlisting}
+
+  \paragraph{Popularita ($P$):}
+  Popularita sa meria ako pomer aktuálneho počtu účastníkov voči
+  maximálnej kapacite eventu. Ak event nemá stanovený limit, používa
+  sa strop 100:
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet skóre popularity]
+  val maxCap   = if (event.participants > 0)
+      event.participants.toDouble() else 100.0
+  val popScore = min(event.attendees.size.toDouble() / maxCap, 1.0) *
+      w.popularity
+  \end{lstlisting}
+
+  \paragraph{Bonus za obľúbenú kategóriu ($B_{fav}$):}
+  Obľúbené eventy sa \textbf{nepočítajú} do profilu preferencií —
+  používajú sa \textbf{výhradne} na tento bonus. To umožňuje
+  používateľovi explicitne označiť čo sa mu páči bez ovplyvnenia
+  celkového profilu navštívených eventov:
+
+  \begin{lstlisting}[language=Kotlin, caption=Výpočet bonusu za obľúbenú kategóriu]
+  val favoriteSubCategories = allEvents
+      .filter { it.id in favoriteEventIds }
+      .map { it.category }
+      .toSet()
+
+  val favBonus = if (favoriteSubCategories.contains(subCategory))
+      w.favoriteBonus.toDouble() else 0.0
+  \end{lstlisting}
+
+  % ═══════════════════════════════════════════════════════════════════════                                                                                                                                                        
+  \subsubsection{Výstup a používateľské rozhranie}
+  % ═══════════════════════════════════════════════════════════════════════                                                                                                                                                        
+
+  Výsledkom výpočtu je zoznam objektov \texttt{ScoredEvent} zoradený
+  zostupne podľa skóre. Odporúčania sa zobrazujú na obrazovke
+  \texttt{RecommendedEventsScreen}, kde každý event zobrazuje aj
+  percentuálne skóre zhody. Používateľ si môže jednotlivé váhy faktorov
+  upraviť pomocou sliderov priamo na tejto obrazovke — po každej zmene
+  sa odporúčania prepočítajú v reálnom čase.
