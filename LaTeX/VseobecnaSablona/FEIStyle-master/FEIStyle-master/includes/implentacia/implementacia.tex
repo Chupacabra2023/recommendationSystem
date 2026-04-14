@@ -1,6 +1,18 @@
 \section{Implementacia}
 V tejto časti sa zameriame na samotnú implementáciu navrhovanej aplikácie, ktorá zahŕňa výber technológií, architektúru systému a detailný popis jednotlivých komponentov.
 
+\subsection{Architektonický prístup: MVVM s Jetpack Compose}
+V súlade s princípmi čistého návrhu (\textit{Clean Architecture}) opísanými v \cite{sks_medium_2024},
+je v projekte implementovaný vzor MVVM s dôrazom na \textbf{jednosmerný tok dát}
+(\textit{Unidirectional Data Flow - UDF}). Tradičný mechanizmus \textit{Data Bindingu}
+známy zo starších verzií Androidu je tu nahradený moderným reaktívnym prístupom:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{State Hoisting (Vynášanie stavu):} ViewModel uchováva kompletný stav obrazovky v podobe imutabilného objektu (napr. \textit{EventsUiState}). UI komponenty sú takmer bezstavové (\textit{stateless}), čo uľahčuje ich znovupoužiteľnosť.
+    \item \textbf{Reaktívne pozorovanie (StateFlow):} Používateľské rozhranie je prepojené s \textit{StateFlow} vo ViewModele. Akákoľvek zmena v dátach vyvolá okamžitú \textbf{rekompozíciu} dotknutých častí rozhrania.
+    \item \textbf{Spracovanie udalostí (Events):} Všetky akcie používateľa sú prenášané ako udalosti smerom k ViewModelu. View nikdy neupravuje dáta priamo, čo zaručuje, že \textit{ViewModel} zostáva jediným zdrojom pravdy (\textit{Single Source of Truth}).
+\end{itemize}
+
 \input{includes/implentacia/authentifikacia.tex}
 \input{includes/implentacia/mapa.tex}
 \input{includes/implentacia/eventy.tex}
