@@ -13,16 +13,16 @@ Testovanie sme rozdelili na dve časti:
 \end{enumerate}
 
 % ─────────────────────────────────────────────────────────────────────────────
-\section{Časť 1 - Analýza vplyvu váh}
+\subsection{Analýza vplyvu váh}
 % ─────────────────────────────────────────────────────────────────────────────
 
-\subsection{Cieľ}
+\subsubsection{Cieľ}
 
 Cieľom tejto časti bolo pochopiť, ako jednotlivé faktory váhového vektora reálne
 ovplyvňujú výsledné skóre odporúčaní, a identifikovať ktoré faktory sú pre
 personalizáciu skutočne relevantné.
 
-\subsection{Testovací používateľ}
+\subsubsection{Testovací používateľ}
 
 Na účely testovania používame náhodného syntetického používateľa, ktorého budeme
 nazývať Janko. Janko navštívil celkovo 8 udalostí. Ich rozdelenie podľa hlavných
@@ -65,7 +65,7 @@ Okrem histórie navštívených podujatí systém berie do úvahy aj udalosti oz
 ako obľúbené. Tieto majú vyššiu váhu vďaka faktoru $B_{fav}$. Janko označil ako
 obľúbenú udalosť v podkategórii \textit{Strength \& Conditioning} (Sports).
 
-\subsection{Vizuálna analýza profilu}
+\subsubsection{Vizuálna analýza profilu}
 
 Na obrázku~\ref{fig:porovnanie_grafov} vidíme, že zatiaľ čo na úrovni hlavných
 kategórií dominuje šport (50\,\%), na úrovni podkategórií sú záujmy veľmi
@@ -108,7 +108,7 @@ diverzifikované - každá podkategória má zastúpenie len 12,5–25\,\%.
 \label{fig:porovnanie_grafov}
 \end{figure}
 
-\subsection{Výsledky testovania váh}
+\subsubsection{Výsledky testovania váh}
 
 Pre výpočet finálneho skóre používame vážený súčet faktorov
 (vzťah~\ref{eq:score_formula}):
@@ -124,7 +124,7 @@ váh $w_1$ až $w_6$, ktoré sa nachádzajú v priloženom dokumente
   prehľad piatich najlepších (TOP 5) odporúčaní a podrobný rozbor príspevkov jednotlivých faktorov
  k výslednému skóre (detailné výstupy sú uvedené v Prílohe~\ref{priloha:vysledky}).
 
-\subsubsection{Výsledky pri rovnomernom rozdelení váh}
+\paragraph{Výsledky pri rovnomernom rozdelení váh}
 
 Pri rovnomernom rozdelení ($w_i \approx 16.67\,\%$) dominujú v odporúčaniach
 udalosti s vysokým ratingom a obľúbené udalosti. Dôvodom sú vlastnosti
@@ -149,7 +149,7 @@ normalizovaných vstupov:
 Záver: čím viac chceme personalizovať podľa histórie, tým agresívnejšie musíme
 zvyšovať váhy kategórií.
 
-\subsubsection{Porovnanie vplyvu faktorov pri dominantnej váhe 60\,\%}
+\paragraph{Porovnanie vplyvu faktorov pri dominantnej váhe 60\,\%}
 
 \begin{table}[H]
 \centering
@@ -176,7 +176,7 @@ Popularita       & 31\,\% & Najslabší faktor - nízka obsadenosť v testovacej
 \label{tab:vplyv_faktorov}
 \end{table}
 
-\subsubsection{Zhodnotenie faktora podkategórie}
+\paragraph{Zhodnotenie faktora podkategórie}
 
 Podkategória má najnižší reálny vplyv, jej zachovanie v algoritme má však
 strategický význam:
@@ -188,10 +188,10 @@ strategický význam:
 \end{itemize}
 
 % ─────────────────────────────────────────────────────────────────────────────
-\section{Časť 2 - Overenie funkčnosti predpovede}
+\subsection{Overenie funkčnosti predpovede}
 % ─────────────────────────────────────────────────────────────────────────────
 
-\subsection{Cieľ}
+\subsubsection{Cieľ}
 
 Táto časť má dva ciele. Prvým je overiť, či systém vôbec dokáže správne predpovedať
 relevantné udalosti na základe histórie - teda či základná funkčnosť funguje.
@@ -199,7 +199,7 @@ Druhým cieľom je nájsť optimálnu konfiguráciu váh pre hlavnú kategóriu 
 keďže z Časti~1 vyplynulo, že práve tieto dva faktory sú relevantné pre
 personalizáciu.
 
-\subsection{Overenie základnej funkčnosti}
+\subsubsection{Overenie základnej funkčnosti}
 
 Overovali sme, či systém správne predpovedá udalosti zodpovedajúce dominantnej
 kategórii používateľa. Vytvorili sme 5~profilov s jasne definovanou dominantnou
@@ -245,7 +245,7 @@ všetkých prípadoch dokázal na základe histórie správne predpovedať relev
 udalosti. Tento výsledok potvrdzuje, že content-based filtrovanie efektívne
 extrahuje preferencie z histórie a aplikuje ich pri generovaní odporúčaní.
 
-\subsection{Testovanie citlivosti predpovede}
+\subsubsection{Testovanie citlivosti predpovede}
 
 Po potvrdení základnej funkčnosti sme hľadali optimálnu konfiguráciu pomeru
 hlavná kategória / podkategória. Testovanie prebehlo na 50~syntetických
@@ -283,7 +283,7 @@ dosiahla maximum 40\,\%, pričom T10 (100\,\% podkategória) skončila na 34\,\%
 Kombinácia oboch faktorov v rovnakom pomere teda reaguje na zmeny histórie lepšie
 ako ktorýkoľvek faktor samostatne.
 
-\subsection{Obmedzenia metodiky}
+\subsubsection{Obmedzenia metodiky}
 
 Leave-one-out metodika má na syntetických dátach niekoľko prirodzených obmedzení.
 Používatelia s menej ako 5~navštívenými udalosťami predstavujú cold start scenár,
