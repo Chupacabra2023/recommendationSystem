@@ -253,7 +253,7 @@ Places SDK for Android umožňuje vytvárať aplikácie, ktoré kontextuálne re
 Tento nástroj dopĺňa základné geografické služby systému Android o bohatú databázu miest, ktoré majú pre používateľa konkrétny význam.
 
 Kľúčové funkcie a rozhrania zahŕňajú:
-\begin{itemize}
+\begin{itemize}[noitemsep, topsep=0pt]
     \item \textbf{Programový prístup k databáze:} SDK poskytuje prístup k informáciám o miestnych podnikoch, bodoch záujmu a aktuálnej polohe zariadenia.
     \item \textbf{Autocomplete:} Ponúka predpripravené komponenty  na predpovedanie názvov miest v reakcii na vyhľadávacie dopyty používateľa.
     \item \textbf{Definícia miesta (Place):} Miesto je v rámci API reprezentované rozhraním
@@ -266,39 +266,34 @@ Tento komponent spravuje autentifikačný tok  a životný cyklus prístupových
 
 
 \paragraph{Google Location Services}
-Knižnica \texttt{play-services-location} je súčasťou služieb Google Play a poskytuje vysoko presné a  efektívne sledovanie polohy zariadenia.
-% Zdroj: https://developer.android.com/develop/sensors-and-location/location
+Knižnica \texttt{play-services-location} je súčasťou služieb Google Play a poskytuje vysoko presné a efektívne sledovanie polohy zariadenia \cite{google_location_android}
+                                       .
 
 \paragraph{Konfigurácia a bezpečnosť rozhraní}
-Prepojenie aplikácie s cloudovou infraštruktúrou je realizované prostredníctvom konfiguračného súboru \texttt{google-services.json} a unikátnych API kľúčov. Bezpečnosť týchto rozhraní je zabezpečená na dvoch úrovniach:
-\begin{itemize}
-    \item \textbf{Technické obmedzenia:} Prístup k API je v \textit{Google Cloud Console} striktne obmedzený na balík aplikácie (\textit{Package Name}) a unikátny \textbf{SHA-1 odtlačok} podpisového certifikátu vývojára.
-    \item \textbf{Separácia citlivých údajov:} API kľúče sú uložené mimo zdrojového kódu v súbore \texttt{local.properties}, ktorý je ignorovaný systémom správy verzií, a do projektu sú načítavané pomocou nástroja \textit{Secrets Gradle Plugin}.
+Prepojenie aplikácie s cloudovou infraštruktúrou je realizované prostredníctvom konfiguračného súboru 
+\texttt{google-services.json} a unikátnych API kľúčov. Bezpečnosť týchto rozhraní je zabezpečená na dvoch úrovniach \cite{cloudinary_blog}:
+\begin{itemize}[noitemsep, topsep=0pt]
+    \item \textbf{Technické obmedzenia:} Prístup k API je je striktne obmedzený na balík aplikácie
+     a unikátny SHA-1 odtlačok podpisového certifikátu vývojára.
+    \item \textbf{Separácia citlivých údajov:} API kľúče sú uložené mimo zdrojového kódu v 
+    súbore \texttt{local.properties}
 \end{itemize}
 
 \subsection{Cloudinary – správa digitálnych aktív}
-Pre efektívnu správu, optimalizáciu a doručovanie vizuálneho obsahu (obrázky podujatí, logá, profilové fotografie)
-bola do projektu integrovaná platforma \textbf{Cloudinary}. Ide o moderný systém správy digitálnych aktív, 
+Pre efektívnu správu, optimalizáciu a doručovanie vizuálneho obsahu 
+bola do projektu integrovaná platforma Cloudinary. Ide o moderný systém správy digitálnych aktív, 
 ktorý využíva umelú inteligenciu a pokročilé algoritmy na spracovanie obrazu \cite{cloudinary_blog}.
 
 \subsubsection{Kľúčové výhody a funkcie}
-Cloudinary poskytuje nástroje, ktoré presahujú možnosti bežného cloudového úložiska:
+Cloudinary poskytuje nástroje, ktoré presahujú možnosti bežného cloudového úložiska \cite{cloudinary_blog}.:
 \begin{itemize}
-    \item \textbf{Automatická optimalizácia:} Systém pomocou AI automaticky upravuje formát, kvalitu a rozlíšenie obrázkov v reálnom čase podľa zariadenia používateľa, čo výrazne znižuje spotrebu dát a zrýchľuje načítavanie aplikácie.
-    \item \textbf{Dynamické transformácie:} Umožňuje vykonávať úpravy (orezanie na štvorec, zmena veľkosti, pridanie vodoznaku) priamo prostredníctvom úpravy URL adresy obrázka, bez nutnosti manuálneho generovania viacerých verzií súborov.
-    \item \textbf{Škálovateľnosť:} Infraštruktúra je navrhnutá tak, aby bezchybne doručovala vizuálny obsah vo veľkom meradle (\textit{at scale}) pri zachovaní vysokej rýchlosti odozvy.
+    \item \textbf{Automatická optimalizácia:} Systém pomocou AI automaticky upravuje formát, kvalitu a rozlíšenie obrázkov v reálnom čase podľa zariadenia používateľa.
+    \item \textbf{Dynamické transformácie:} Umožňuje vykonávať úpravy  priamo prostredníctvom úpravy URL adresy obrázka.
+    \item \textbf{Škálovateľnosť:} Infraštruktúra je navrhnutá tak, aby zvládla vytváranie kvaliných dát.
 \end{itemize}
 
-\subsubsection{Porovnanie s Firebase Storage a ekonomické hľadisko}
-Hoci ekosystém Firebase, využívaný v tejto práci, ponúka vlastnú službu \textit{Firebase Storage}, pre účely správy obrázkov bola zvolená platforma Cloudinary z nasledujúcich dôvodov:
-\begin{enumerate}
-    \item \textbf{Nákladová efektivita:} Firebase Storage uplatňuje striktné limity na prenos dát a ukladanie
-    \item \textbf{Absencia natívnej manipulácie:} Firebase Storage slúži primárne ako „pasívne“ úložisko súborov 
-\end{enumerate}
-% Zdroj: https://cloudinary.com/blog/three_key_benefits_of_modern_digital_asset_management
-
 \subsection{Návrh algoritmu odporúčania}
-Pre personalizáciu obsahu bol navrhnutý a implementovaný \textbf{váhový hybridný model odporúčania}
+Pre personalizáciu obsahu bol navrhnutý a implementovaný váhový hybridný model odporúčania
 (\textit{Weighted Hybrid System}). Tento systém dynamicky kombinuje implicitné dáta z histórie interakcií
 používateľa s explicitnými preferenciami zadávanými v reálnom čase pomocou váhových koeficientov. Na rozdiel 
 od čisto obsahového filtrovania (\textit{Content-based filtering}) tento prístup umožňuje algoritmu okamžite 

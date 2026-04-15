@@ -83,47 +83,11 @@
 
   \paragraph{Odoslanie žiadosti:}
   Pred vytvorením novej žiadosti sa skontroluje, či medzi dvojicou
-  používateľov už vzťah existuje:
-
-  \begin{lstlisting}[language=Kotlin, caption=Odoslanie žiadosti o priateľstvo]
-  fun sendFriendRequest(fromId: String, toId: String) {
-      val alreadyExists = _friendships.any {
-          (it.requesterId == fromId && it.receiverId == toId) ||
-          (it.requesterId == toId   && it.receiverId == fromId)
-      }
-      if (alreadyExists) {
-          friendshipError = "Žiadosť o priateľstvo už existuje."
-          return
-      }
-      val friendship = Friendship(
-          id          = docRef.id,
-          requesterId = fromId,
-          receiverId  = toId,
-          status      = "pending",
-          timestamp   = System.currentTimeMillis()
-      )
-      docRef.set(friendship.toMap()).await()
-      _friendships.add(friendship)
-  }
-  \end{lstlisting}
+  používateľov už vzťah existuje — duplicitné žiadosti sú zamietnuté.
 
   \paragraph{Odpoveď na žiadosť:}
-  Pri prijatí sa stav aktualizuje na \texttt{accepted}; pri odmietnutí
-  sa dokument z Firestore aj z lokálnej pamäte vymaže:
-
-  \begin{lstlisting}[language=Kotlin, caption=Prijatie alebo odmietnutie žiadosti]
-  fun respondToFriendRequest(friendshipId: String, accept: Boolean) {
-      if (accept) {
-          db.collection("friendships").document(friendshipId)
-              .update("status", "accepted").await()
-          _friendships[idx] = _friendships[idx].copy(status = "accepted")
-      } else {
-          db.collection("friendships").document(friendshipId)
-              .delete().await()
-          _friendships.removeAll { it.id == friendshipId }
-      }
-  }
-  \end{lstlisting}
+  Pri prijatí sa stav dokumentu aktualizuje na \texttt{accepted}; pri odmietnutí
+  sa dokument vymaže z Firestore aj z lokálnej pamäte.
 
   \iffalse                                                                                                                                                                                                                         
   \paragraph{Odstránenie priateľa:}
@@ -162,13 +126,3 @@
   \texttt{directMessages/\{conversationId\}/messages} a synchronizujú sa
   v reálnom čase cez \texttt{snapshotListener} — rovnaký mechanizmus
   ako chat v udalostiach.
-
-  \paragraph{Používateľské rozhranie:}
-  Obrazovka \texttt{FriendsScreen} je dostupná z bočného menu pod položkou
-  „Priatelia" a je rozdelená do dvoch sekcií:
-  \begin{itemize}
-      \item \textbf{Žiadosti o priateľstvo} — zobrazujú sa len ak existujú,
-            s tlačidlami „Prijať" a „Odmietnuť".
-      \item \textbf{Priatelia} — zoznam akceptovaných priateľov s možnosťou
-            otvoriť priamu konverzáciu alebo priateľa odstrániť.
-  \end{itemize}

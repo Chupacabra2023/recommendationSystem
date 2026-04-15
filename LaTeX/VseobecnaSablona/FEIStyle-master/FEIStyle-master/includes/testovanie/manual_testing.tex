@@ -1,70 +1,20 @@
 \subsection{Manuálne testovanie systému}
 
-V tejto časti sú popísané manuálne testovacie scenáre (Test Cases), ktoré overujú funkčnosť aplikácie z pohľadu koncového používateľa.
-Výsoledky môžete idieť v prílohe~\ref{priloha:manual_tests} 
+Manuálne testovanie overovalo funkčnosť aplikácie z pohľadu koncového používateľa.
+Celkovo bolo definovaných 46 testovacích scenárov (T01~--~T46), ktoré pokrývajú
+nasledujúce oblasti:
 
-\hbadness=10000 
-\begin{tabularx}{\textwidth}{@{} l >{\small}p{2.8cm} >{\small}p{3.2cm} >{\small}p{2.5cm} >{\small}X @{} }
-\caption{Zoznam manuálnych testovacích scenárov} \label{tab:manual_tests} \\
-\toprule
-\textbf{ID} & \textbf{Scenár} & \textbf{Kroky} & \textbf{Vstup} & \textbf{Očakávaný výsledok} \\ \midrule
-\endfirsthead
+\begin{itemize}[noitemsep]
+    \item \textbf{Autentifikácia} (T01~--~T08) — registrácia, prihlásenie, Google Sign-In, reset hesla,
+    \item \textbf{Správa udalostí} (T09~--~T15) — vytvorenie, súkromný event, pripojenie, odhlásenie,
+    \item \textbf{Penalizačný systém} (T16~--~T17) — no-show varovania a zablokovanie účtu,
+    \item \textbf{Check-in} (T18~--~T20) — QR kód a manuálny check-in,
+    \item \textbf{Komunikácia a pozvánky} (T21~--~T24) — chat v evente, pozvánky emailom,
+    \item \textbf{Nahlásenia} (T25~--~T26, T44~--~T45) — nahlásenie eventu aj používateľa,
+    \item \textbf{Odporúčania a notifikácie} (T27~--~T29),
+    \item \textbf{Validácia formulárov} (T31~--~T37) — povinné polia, dátumy, fotky,
+    \item \textbf{Filtrovanie} (T38~--~T43) — podľa názvu, kategórie, ceny, vzdialenosti a dátumu.
+\end{itemize}
 
-\toprule
-\textbf{ID} & \textbf{Scenár} & \textbf{Kroky} & \textbf{Vstup} & \textbf{Očakávaný výsledok} \\ \midrule
-\endhead
-
-\midrule
-\multicolumn{5}{r@{}}{Pokračuje na ďalšej strane...} \\
-\endfoot
-
-\bottomrule
-\endlastfoot
-
-T01 & Registrácia — platné údaje & Otvoriť apku $\rightarrow$ Register & Platný email, heslo 6+ znakov & Odoslanie verifikácie, presmerovanie na Landing. \\ \midrule
-T02 & Registrácia — slabé heslo & Otvoriť apku $\rightarrow$ Register & Heslo 3 znaky & Chybová hláška o dĺžke hesla. \\ \midrule
-T03 & Registrácia — existujúci email & Otvoriť apku $\rightarrow$ Register & Email v databáze & Chybová hláška o duplicitnom účte. \\ \midrule
-T04 & Prihlásenie — neoverený email & Login & Neoverený email & Hláška o nutnosti overiť email. \\ \midrule
-T05 & Prihlásenie — správne údaje & Login & Správne údaje & Presmerovanie na mapu. \\ \midrule
-T06 & Prihlásenie — zlé heslo & Login & Nesprávne heslo & Chybová hláška. \\ \midrule
-T07 & Google prihlásenie & Continue with Google & Výber účtu & Presmerovanie na mapu. \\ \midrule
-T08 & Reset hesla & Forgot password & Platný email & Info o odoslaní resetovacieho emailu. \\ \midrule
-T09 & Vytvorenie eventu & Mapa $\rightarrow$ FAB $\rightarrow$ pin & Vyplnené polia & Nový marker na mape. \\ \midrule
-T10 & Súkromný event & Visibility: private & Heslo k eventu & Event viditeľný len po zadaní hesla. \\ \midrule
-T11 & Pripojenie cez heslo & Pripojiť sa cez heslo & Správne heslo & Úspešné pridanie do eventu. \\ \midrule
-T12 & Pridanie sa na event & EventDetail $\rightarrow$ Pridať sa & Verejný event & Meno v zozname účastníkov. \\ \midrule
-T13 & Plný event & EventDetail $\rightarrow$ Pridať sa & Kapacita naplnená & Zobrazenie pozície v poradovníku. \\ \midrule
-T14 & Odhlásenie včas & EventDetail $\rightarrow$ Odhlásiť & Pred deadlinom & Odhlásenie bez varovania. \\ \midrule
-T15 & Odhlásenie po termíne & EventDetail $\rightarrow$ Odhlásiť & Po deadline & Varovný dialóg o penalizácii. \\ \midrule
-T16 & No-show varovanie & Automaticky & 2 no-show / 30 dní & Toast varovanie (2/3). \\ \midrule
-T17 & Zablokovanie účtu (no-show) & Automaticky & 3 no-show / 30 dní & Odhlásenie a blokácia účtu. \\ \midrule
-T18 & QR check-in (tvorca) & Účastníci $\rightarrow$ QR ikona & --- & Zobrazenie unikátneho QR kódu. \\ \midrule
-T19 & QR check-in (hosť) & Scan ikona & Scan QR kódu & Badge „Prítomný" pri mene. \\ \midrule
-T20 & Manuálny check-in & Účastníci $\rightarrow$ toggle & Klik na meno & Zmena stavu na prítomný. \\ \midrule
-T21 & Chat v evente & Tab Chat & Odoslanie správy & Okamžité zobrazenie správy. \\ \midrule
-T22 & Chat (neúčastník) & Tab Chat & Nie je účastník & Blokovanie písania správ. \\ \midrule
-T23 & Pozvánka emailom & Pozvať $\rightarrow$ email & Registrovaný email & Pozvánka v sekcii používateľa. \\ \midrule
-T24 & Prijatie pozvánky & Drawer $\rightarrow$ Pozvánky & Klik na „Prijať" & Zaradenie medzi účastníkov. \\ \midrule
-T25 & Nahlásenie eventu & Ikona vlajky & Výber dôvodu & Potvrdenie o nahlásení. \\ \midrule
-T26 & Nahlásenie užívateľa & Profil $\rightarrow$ vlajka & Výber dôvodu & Potvrdenie o nahlásení. \\ \midrule
-T27 & Odporúčania & Drawer $\rightarrow$ Odporúčané & --- & Zoznam zoradený podľa AI. \\ \midrule
-T28 & Filter na mape & Filter ikona & Kategória: Šport & Zobrazenie len športových eventov. \\ \midrule
-T29 & Notifikácie & Nastavenia & Výber času & Uloženie preferencií. \\ \midrule
-T30 & Odhlásenie & Drawer $\rightarrow$ Odhlásiť & Potvrdenie & Presmerovanie na Landing page. \\ \midrule
-T31 & Povinné polia & Uložiť event & Prázdny formulár & Toast s chybovou hláškou. \\ \midrule
-T32 & Chýbajúci dátum & Uložiť event & Bez dátumu & Výzva na výber dátumu a času. \\ \midrule
-T33 & Chýbajúca kategória & Uložiť event & Bez kategórie & Výzva na výber kategórie. \\ \midrule
-T34 & Chýbajúca podkategória & Uložiť event & Bez podkategórie & Výzva na výber podkategórie. \\ \midrule
-T35 & Dátum v minulosti & Výber dátumu & Včerajší deň & Deň nie je možné vybrať. \\ \midrule
-T36 & Zadanie adresy & Pole Miesto & „Hlavné nám" & Autocomplete návrhy. \\ \midrule
-T37 & Nahratie fotky & Pridať fotky & Výber z galérie & Zobrazenie náhľadu. \\ \midrule
-T38 & Filter — podľa názvu & Filter $\rightarrow$ Názov & „jazz" & Zobrazenie relevantných eventov. \\ \midrule
-T39 & Filter — podľa kategórie & Filter $\rightarrow$ Kategória & „Šport" & Zobrazia sa len Šport eventy. \\ \midrule
-T40 & Filter — podkategória & Filter $\rightarrow$ Podkategória & Konkrétna voľba & Zobrazenie podľa podkategórie. \\ \midrule
-T41 & Filter — max. cena & Filter $\rightarrow$ Max. cena & „10" & Eventy nad 10€ zmiznú. \\ \midrule
-T42 & Filter — vzdialenosť & Filter $\rightarrow$ Okruh & 5 km & Zobrazia sa eventy do 5 km. \\ \midrule
-T43 & Filter — dátum & Filter $\rightarrow$ Dátum od & Konkrétny deň & Eventy od daného dátumu. \\ \midrule
-T44 & Soft ban užívateľa & 3x nahlásenie profilu & Rôzni užívatelia & Dočasné obmedzenie funkcií účtu. \\ \midrule
-T45 & Odstránenie eventu & 3x nahlásenie eventu & Rôzni užívatelia & Automatické stiahnutie eventu z mapy. \\
-T46 & Použitie rovnakého mena pri registrácii & Registrácia & Existujúce uživatelské jméno & Chybová hláška o duplicitním jménu. \\
-\end{tabularx}
+Všetky scenáre vrátane krokov, vstupov a očakávaných výsledkov sú uvedené
+v prílohe~\ref{priloha:manual_tests}.

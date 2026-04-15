@@ -1,10 +1,16 @@
 \subsection{Autentifikácia a správa používateľov}
-Aplikácia je navrhnutá podľa architektúry \textbf{MVVM (Model-View-ViewModel)}, ktorá zabezpečuje jasné oddelenie biznis logiky od používateľského rozhrania. Implementácia autentifikácie prebieha na úrovni vrstvy \textit{Model} (služba \texttt{AuthService}), zatiaľ čo validácia a spracovanie stavov sú riešené vo vrstve \textit{ViewModel}.
+Aplikácia je navrhnutá podľa architektúry MVVM (Model-View-ViewModel), 
+ktorá zabezpečuje jasné oddelenie biznis logiky od používateľského rozhrania. 
+Implementácia autentifikácie prebieha na úrovni vrstvy \textit{Model}. (služba \texttt{AuthService}),
+zatiaľ čo validácia a spracovanie stavov sú riešené vo vrstve \textit{ViewModel}.
 
 \subsubsection{Implementácia kľúčových funkcií}
-Služba \texttt{AuthService} zabezpečuje nízkoúrovňovú komunikáciu s Firebase. Využíva asynchrónne volania pomocou Kotlin korutín, čo umožňuje neblokujúce vykonávanie sieťových operácií. Registrácia nového používateľa zahŕňa nielen vytvorenie účtu, ale aj okamžitú aktualizáciu profilu o zobrazované meno (\textit{displayName}):
-
-\medskip % Pridaná medzera pred kódom
+Služba \texttt{AuthService} zabezpečuje nízkoúrovňovú komunikáciu s Firebase. 
+Využíva asynchrónne volania pomocou Kotlin korutín, 
+čo umožňuje neblokujúce vykonávanie sieťových operácií.
+Registrácia nového používateľa zahŕňa nielen vytvorenie účtu, ale aj okamžitú aktualizáciu profilu o zobrazované meno (\textit{displayName}): 
+pričom validujeme každý vstup.
+\medskip 
 \begin{lstlisting}[language=Kotlin, caption=Registrácia používateľa v AuthService]
 suspend fun registerWithEmail(
     email: String,
@@ -20,7 +26,8 @@ suspend fun registerWithEmail(
 \end{lstlisting}
 \medskip % Pridaná medzera za kódom
 
-Prihlásenie cez Google účet prebieha prostredníctvom \texttt{GoogleSignInClient}, pričom po získaní \texttt{idToken} sa volá metóda \texttt{firebaseAuthWithGoogle}:
+Prihlásenie cez Google účet prebieha prostredníctvom \texttt{GoogleSignInClient}, pričom po 
+získaní \texttt{idToken} sa volá metóda \texttt{firebaseAuthWithGoogle}:
 
 \medskip
 \begin{lstlisting}[language=Kotlin, caption=Prihlásenie cez Google v AuthService]
@@ -42,25 +49,7 @@ suspend fun signInWithEmail(email: String, password: String) {
 \end{lstlisting}
 \medskip
 
-\subsubsection{Validácia vstupných údajov}
-Pred odoslaním požiadavky na server vykonáva \texttt{ViewModel} lokálnu validáciu na strane klienta. Týmto prístupom šetríme sieťovú prevádzku a zlepšujeme odozvu rozhrania. V rámci bezpečnosti sa kontroluje:
 
-\begin{itemize}[noitemsep]
-    \item formát e-mailovej adresy (validita syntaxe),
-    \item komplexnosť hesla (minimálna dĺžka 6 znakov, prítomnosť veľkého písmena a špeciálneho znaku),
-    \item zhoda hesla s jeho potvrdením pri registrácii.
-\end{itemize}
-
-\medskip
-\begin{lstlisting}[language=Kotlin, caption=Validácia hesla v RegisterViewModel]
-passwordError = when {
-    password.length < 6 -> "Heslo musí mať aspoň 6 znakov."
-    !password.any { it.isUpperCase() } -> "Heslo musí obsahovať veľké písmeno."
-    !password.any { !it.isLetterOrDigit() } -> "Heslo musí obsahovať špeciálny znak."
-    else -> null
-}
-\end{lstlisting}
-\medskip
 
 \subsubsection{Bezpečnostné obmedzenia a banovanie}
 Nad rámec štandardnej autentifikácie aplikácia implementuje kontrolu stavu používateľa. Pri každom prihlásení sa overuje atribút \texttt{banned} v dokumente používateľa v databáze Firestore. V prípade, že je používateľ zablokovaný, systém ho okamžite odhlási a zamedzí prístup k chránenému obsahu aplikácie.

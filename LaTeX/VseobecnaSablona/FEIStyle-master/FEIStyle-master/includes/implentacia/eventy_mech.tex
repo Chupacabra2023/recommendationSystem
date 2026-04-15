@@ -14,45 +14,21 @@
   Nový priemer sa vypočíta ako vážený priemer — starý priemer sa vynásobí počtom
   predchádzajúcich hodnotení, pripočíta sa nové hodnotenie a výsledok sa vydelí
   novým celkovým počtom. Týmto spôsobom sa zachová presnosť bez nutnosti ukladať
-  každé individuálne hodnotenie:
 
-  \begin{lstlisting}[language=Kotlin, caption=Implementácia metódy rateEvent]
-  fun rateEvent(eventId: String, userId: String, stars: Int) {
-      val event = _events[eventId] ?: return
-      if (userId in event.ratedBy) return  // každý môže hodnotiť len raz
 
-      val newTotal  = event.totalRatings + 1
-      val newRating = ((event.rating * event.totalRatings) + stars) / newTotal
-
-      val updated = event.copy(
-          rating       = newRating,
-          totalRatings = newTotal,
-          ratedBy      = event.ratedBy + userId
-      )
-      _events[eventId] = updated
-      selectedEvent = updated
-      viewModelScope.launch {
-          db.collection("events").document(eventId).update(mapOf(
-              "rating"       to newRating,
-              "totalRatings" to newTotal,
-              "ratedBy"      to updated.ratedBy
-          )).await()
-      }
-  }
-  \end{lstlisting}
 
   \subsubsection{Pravidlá hodnotenia:}
-  \begin{itemize}
-      \item Hodnotiť môžu len účastníci eventu — nie tvorca ani cudzí používatelia.
-      \item Každý používateľ môže hodnotiť len raz — kontrola prebieha cez zoznam
+  \begin{itemize}[noitemsep, nolistsep]
+      \item Hodnotiť môžu len účastníci eventu - nie tvorca ani cudzí používatelia.
+      \item Každý používateľ môže hodnotiť len raz - kontrola prebieha cez zoznam
             \texttt{ratedBy}.
       \item Hodnotenie je v rozsahu 1 až 5 hviezd.
       \item Priemerné hodnotenie vstupuje ako jeden z faktorov do odporúčacieho
-            systému s váhou 16\,\%.
+            systému s váhou 16 ak ju používateľ nezmení\,\%.
   \end{itemize}
 
   \subsubsection{Používateľské rozhranie:}
-  Sekcia hodnotenia sa v \texttt{EventDetailScreen} (Tab~0) zobrazí len
+  Sekcia hodnotenia sa v \texttt{EventDetailScreen} zobrazí len
   účastníkovi, ktorý ešte nehodnotil. Aktuálne priemerné hodnotenie a celkový
   počet hodnotení sú viditeľné pre všetkých používateľov.
 
@@ -115,13 +91,13 @@
 
   \paragraph{Generovanie QR kódu:}
   QR kód sa generuje pomocou knižnice ZXing priamo na zariadení organizátora
-  (\texttt{QrCodeScreen.kt}). Obsahom kódu je \texttt{eventId} — unikátny
+  (\texttt{QrCodeScreen.kt}). Obsahom kódu je \texttt{eventId} - unikátny
   identifikátor udalosti z Firestore.
 
   \paragraph{Skenovanie QR kódu:}
   Skenovanie je implementované v \texttt{QrScanScreen.kt} pomocou CameraX
   na zobrazenie náhľadu kamery a ML Kit Barcode Scanning na rozpoznanie kódu.
-  Obrazovka najprv požiada o oprávnenie \texttt{CAMERA}. Stratégia
+  Obrazovka najprv požiada o oprávnenie . Stratégia
   \texttt{STRATEGY\_KEEP\_ONLY\_LATEST} zabezpečuje spracovanie len posledného
   snímku. Po úspešnom naskenovaní sa zavolá
   \texttt{appViewModel.checkInAttendee(eventId, userId)}.
@@ -188,7 +164,7 @@
   Účastník s potvrdenou prítomnosťou má zelenú odznak „$\checkmark$ Prítomný".
 
   \paragraph{Väzba na penalizačný systém:}
-  Ak je \texttt{checkInType} $\neq$ \texttt{none} a účastník sa neodhlási ani
+  Ak je \texttt{checkInType} \texttt{none} a účastník sa neodhlási ani
   nezaregistruje check-in, po skončení eventu mu je automaticky zaznamenaný
   no-show.
 
@@ -246,77 +222,12 @@
 
       \item \textbf{Neúčasť} — systém pri štarte skontroluje všetky minulé
             eventy, kde bol používateľ prihlásený, ale nebol check-inovaný:
-  \begin{lstlisting}[language=Kotlin]
-  fun checkNoShows() {
-      for (event in _events.values) {
-          if (event.checkInType == "none") continue
-          if (uid !in event.attendees)    continue
-          if (uid in event.checkedIn)     continue
-          if (event.id in profile.noShowEventIds) continue
-          val eventEnd = event.dateTo?.time
-              ?: event.dateFrom?.time ?: continue
-          if (eventEnd > now) continue
-          recordNoShow(uid, event.id)
-      }
-  }
-  \end{lstlisting}
+  
   \end{enumerate}
 
-  Metóda \texttt{checkNoShows()} sa volá automaticky po každom prihlásení
-  v sekvencii \texttt{loadUserProfile()} $\rightarrow$ \texttt{checkNoShows()}.
-
-  \paragraph{Zaznamenanie no-show:}
-  Metóda \texttt{recordNoShow()} aktualizuje profil používateľa a v prípade
-  dosiahnutia limitu nastaví príznak zablokovania:
-
-  \begin{lstlisting}[language=Kotlin, caption=Implementácia recordNoShow]
-  suspend fun recordNoShow(userId: String, eventId: String) {
-      val now           = System.currentTimeMillis()
-      val newTimestamps = profile.noShowTimestamps + now
-      val newEventIds   = profile.noShowEventIds   + eventId
-      val recentCount   = newTimestamps.count {
-          it > now - 30L * 24 * 3_600_000
-      }
-      val shouldBan = recentCount >= 3
-
-      val updates = mutableMapOf<String, Any>(
-          "noShowTimestamps" to newTimestamps,
-          "noShowEventIds"   to newEventIds
-      )
-      if (shouldBan) {
-          updates["banned"]       = true
-          updates["banReason"]    = "no_show"
-          updates["banTimestamp"] = now
-          cancelPendingInvitations(userId)
-      }
-
-      db.collection("users").document(userId).update(updates).await()
-  }
-  \end{lstlisting}
-
-  \paragraph{Stupňovité varovania:}
-  Po zaznamenaní no-show sa používateľovi zobrazí upozornenie podľa aktuálneho
-  počtu, ako je uvedené v tabuľke~\ref{tab:noshow-warnings}.
-
-  \begin{table}[h]
-      \centering                                                                                                                                                                                                                   
-      \caption{Správanie systému podľa počtu no-show za posledných 30 dní}
-      \label{tab:noshow-warnings}
-      \begin{tabular}{lp{8cm}}
-          \toprule                                                                                                                                                                                                                 
-          \textbf{Počet no-show} & \textbf{Akcia} \\                                                                                                                                                                               
-          \midrule                                                                                                                                                                                                                 
-          1 & Toast: „Máš 1/3 neúčastí za posledných 30 dní." \\                                                                                                                                                                   
-          2 & Toast: „Máš 2/3! Ďalšia ťa zablokuje!" \\                                                                                                                                                                            
-          3 & \texttt{banned = true} $\rightarrow$ odhlásenie
-              $\rightarrow$ „Váš účet bol zablokovaný." \\                                                                                                                                                                         
-          \bottomrule                                                                                                                                                                                                              
-      \end{tabular}
-  \end{table}
 
   \paragraph{Zablokovanie účtu:}
-  Ak \texttt{shouldBan == true}, pole \texttt{banned} sa nastaví na \texttt{true}
-  v databáze Firestore. Pri ďalšom prihlásení \texttt{loadUserProfile()} toto
+  Ak ná používateľ 3 zablokovania dostáva ban. Pri ďalšom prihlásení \texttt{loadUserProfile()} toto
   pole skontroluje a okamžite odhlási používateľa — rovnaký mechanizmus je
   popísaný v sekcii autentifikácie.
 
@@ -337,7 +248,7 @@
   % -------------------------------------------------------                                                                                                                                                                        
   \subsubsection{Systém nahlasovania}
 
-  Systém nahlasovania umožňuje používateľom upozorniť na nevhodný obsah —
+  Systém nahlasovania umožňuje používateľom upozorniť na nevhodný obsah -
   či už udalosť alebo iného používateľa. Pri dosiahnutí stanoveného počtu
   nahlásení sa obsah automaticky odstráni bez nutnosti zásahu administrátora.
 
@@ -379,42 +290,9 @@
   }
   \end{lstlisting}
 
-  \paragraph{Používateľské rozhranie:}
-  Nahlásenie sa vyvolá kliknutím na ikonu príznaku v \texttt{EventDetailScreen}
-  (pre udalosť) alebo v \texttt{PublicProfileScreen} (pre cudzí profil).
-  Zobrazí sa \texttt{AlertDialog} so zoznamom dôvodov ako prepínače
-  (\textit{radio buttons}). Tlačidlo „Nahlásiť" je aktívne len ak je
-  niektorý dôvod vybratý.
+ 
+  
 
-  \paragraph{Logika nahlasovania udalosti:}
-  Metóda \texttt{reportEvent()} prebieha v troch krokoch — kontrola duplikátu,
-  uloženie nahlásenia a prípadné automatické vymazanie udalosti:
-
-  \begin{lstlisting}[language=Kotlin, caption=Implementácia metódy reportEvent]
-  fun reportEvent(reporterId: String, eventId: String, reason: String) {
-      // 1. Kontrola duplikátu
-      val dup = db.collection("reports")
-          .whereEqualTo("reporterId", reporterId)
-          .whereEqualTo("targetId",   eventId)
-          .whereEqualTo("targetType", "event")
-          .get().await()
-      if (!dup.isEmpty) {
-          reportError = "Túto udalosť si už nahlásil/a."
-          return
-      }
-
-      // 2. Uloženie nahlásenia
-      val docRef = db.collection("reports").document()
-      docRef.set(Report(...).toMap()).await()
-
-      // 3. Ak celkový počet nahlásení >= 3, udalosť sa automaticky vymaže
-      val total = db.collection("reports")
-          .whereEqualTo("targetId",   eventId)
-          .whereEqualTo("targetType", "event")
-          .get().await()
-      if (total.size() >= REPORTS_TO_BAN) deleteEvent(eventId)
-  }
-  \end{lstlisting}
 
   \paragraph{Logika nahlasovania používateľa:}
   Metóda \texttt{reportUser()} funguje rovnakým spôsobom. Pri dosiahnutí
@@ -486,8 +364,8 @@
   % -------------------------------------------------------                                                                                                                                                                        
   \subsection{Implementácia komunikačného modulu v reálnom čase}
 
-  Základom interaktivity je integračná vrstva služby \textbf{Firebase Cloud
-  Firestore}, ktorá umožňuje obojsmernú synchronizáciu dát v reálnom čase
+  Základom interaktivity je integračná vrstva služby Firebase Cloud
+  Firestore, ktorá umožňuje obojsmernú synchronizáciu dát v reálnom čase
   bez nutnosti vlastnej serverovej infraštruktúry a správy WebSocket spojení.
 
   \iffalse                                                                                                                                                                                                                         

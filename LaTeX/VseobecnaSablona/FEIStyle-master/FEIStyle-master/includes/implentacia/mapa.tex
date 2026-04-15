@@ -2,9 +2,9 @@
   Ako základ pre mapu je použitá knižnica \textit{Google Maps SDK}, ktorá poskytuje                                                                                                                                                  všetky potrebné funkcionality pre prácu s geografickými dátami. Používateľ na                                                                                                                                                      hlavnej obrazovke vidí interaktívnu mapu, na ktorej sú jednotlivé udalosti                                                                                                                                                       
   zobrazené vo forme markerov.                                                                                                                                                                                                        
   \subsubsection{Zobrazenie mapy a integrácia s Compose}                                                                                                                                                                           
-  Keďže \texttt{MapView} nie je natívny komponent prostredia \textit{Jetpack Compose},                                                                                                                                             
-  využíva sa \texttt{AndroidView} ako most (\textit{bridge}) medzi klasickým
-  \textit{Android View} systémom a \textit{Compose UI}. Mapa sa pri prvotnom
+  Keďže MapView nie je natívny komponent prostredia Jetpack Compose,                                                                                                                                             
+  využíva sa AndroidView ako most bridge medzi klasickým
+  Android View systémom a Compose UI. Mapa sa pri prvotnom
   načítaní predvolene centruje na súradnice Bratislavy.
 
   \begin{lstlisting}[language=Kotlin, caption=Inicializácia MapView v prostredí Compose]
@@ -16,15 +16,13 @@
       }
   }
   \end{lstlisting}
+  MapView pomocou životných cyklov správne reaguje na udalosti \textit{onPause}, \textit{onResume} a \textit{onDestroy}.
 
-  \texttt{MapView} disponuje vlastným životným cyklom, ktorý je manuálne prepojený
-  s životným cyklom obrazovky pomocou \texttt{DisposableEffect}, čím sa zabezpečí
-  správna reakcia na udalosti \textit{onPause}, \textit{onResume} a \textit{onDestroy}.
 
   \subsubsection{GPS poloha a správa oprávnení}
   Po udelení oprávnenia \texttt{ACCESS\_FINE\_LOCATION} aplikácia získa poslednú
   známu polohu zariadenia pomocou \texttt{FusedLocationProviderClient}. Kamera
-  sa presunie na polohu používateľa iba raz — tento stav riadi príznak
+  sa presunie na polohu používateľa iba raz - tento stav riadi príznak
   \texttt{mapMovedToUser} v \texttt{AppViewModel}, čím sa zabraňuje opakovanému
   presunu kamery pri každej rekomponzícii rozhrania.
 
@@ -36,8 +34,8 @@
   pri kliknutí a následnú navigáciu na obrazovku s detailom.
 
   \paragraph{Automatické skrývanie skončených udalostí:}
-  \texttt{AppViewModel} vystavuje computed property \texttt{activeEvents}, ktorá
-  vracia len udalosti, ktorých koniec je v budúcnosti:
+  Vlastnosť \texttt{activeEvents} triedy \texttt{AppViewModel} filtruje udalosti
+  tak, aby zoznam obsahoval len tie, ktorých termín konania ešte nenastal:
 
   \begin{lstlisting}[language=Kotlin, caption=Computed property activeEvents v AppViewModel]
   val activeEvents: List<Event>
@@ -47,8 +45,8 @@
       }
   \end{lstlisting}
 
-  Udalosti bez dátumu sú vždy zobrazené. Skončené udalosti zmiznú z UI
-  automaticky bez mazania z databázy — interné \texttt{\_events} zostáva
+  Skončené udalosti zmiznú z UI
+  automaticky bez mazania z databázy - interné \texttt{\_events} zostáva
   kompletné pre potreby histórie a kontroly neúčastí.
 
   \subsubsection{Okruh pôsobnosti a filtrovanie}

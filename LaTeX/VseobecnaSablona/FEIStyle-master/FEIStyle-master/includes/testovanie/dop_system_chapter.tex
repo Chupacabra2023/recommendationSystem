@@ -2,8 +2,15 @@
 
 \subsection{Metodológia a testovacie dáta}
 
+Štandardné hodnotenie odporúčacích systémov predpokladá prístup k reálnym používateľom a ich interakciám --
+metriky ako Precision, recall či RSME sú zmysluplné iba vtedy
+ak existujú overiteľné reálne preferencie, voči ktorým možno výstupy systému porovnávať \cite{ko2022survey}.
+Keďže aplikácia ešte nebola nasadená pre reálnych používateľov a zber skutočnej spätnej väzby nebol v rámci tejto práce možný,
+testovanie je realizované na synteticky generovaných dátach, ktoré simulujú správanie rôznych typov používateľov s rôznou históriou návštev.
+
+
 Testovanie sme rozdelili na dve časti:
-\begin{enumerate}
+\begin{enumerate}[noitemsep, nolistsep]
     \item \textbf{Analýza vplyvu váh:} Sledovanie zmien odporúčaní pri systematickej
     zmene váhového vektora pre jedného používateľa a overenie citlivosti systému
     na jednotlivé faktory.
@@ -12,35 +19,17 @@ Testovanie sme rozdelili na dve časti:
     optimálnej konfigurácie váh pomocou metriky Precision@5.
 \end{enumerate}
 
-% ─────────────────────────────────────────────────────────────────────────────
+
 \subsection{Analýza vplyvu váh}
-% ─────────────────────────────────────────────────────────────────────────────
-
-\subsubsection{Cieľ}
-
 Cieľom tejto časti bolo pochopiť, ako jednotlivé faktory váhového vektora reálne
 ovplyvňujú výsledné skóre odporúčaní, a identifikovať ktoré faktory sú pre
 personalizáciu skutočne relevantné.
 
 \subsubsection{Testovací používateľ}
-
 Na účely testovania používame náhodného syntetického používateľa, ktorého budeme
-nazývať Janko. Janko navštívil celkovo 8 udalostí. Ich rozdelenie podľa hlavných
-kategórií je spracované v tabuľke~\ref{tab:rozdelenie_kat}.
-
-\begin{table}[H]
-\centering
-\caption{Rozdelenie návštev podľa kategórií}
-\label{tab:rozdelenie_kat}
-\begin{tabular}{|l|c|}
-\hline
-\textbf{Kategória} & \textbf{Počet návštev} \\ \hline
-Sports           & 4 \\
-Education        & 3 \\
-Business \& Tech & 1 \\ \hline
-\textbf{Spolu}   & \textbf{8} \\ \hline
-\end{tabular}
-\end{table}
+nazývať Janko. Janko navštívil celkovo 8 udalostí: 4 športové, 3 vzdelávacie
+a 1 z oblasti Business \& Tech. Konkrétne navštívené podujatia sú uvedené
+v tabuľke~\ref{tab:konkretne_eventy}.
 
 \begin{table}[H]
 \centering
@@ -67,7 +56,7 @@ obľúbenú udalosť v podkategórii \textit{Strength \& Conditioning} (Sports).
 
 \subsubsection{Vizuálna analýza profilu}
 
-Na obrázku~\ref{fig:porovnanie_grafov} vidíme, že zatiaľ čo na úrovni hlavných
+Na obrázku\ref{fig:porovnanie_grafov} vidíme, že zatiaľ čo na úrovni hlavných
 kategórií dominuje šport (50\,\%), na úrovni podkategórií sú záujmy veľmi
 diverzifikované - každá podkategória má zastúpenie len 12,5–25\,\%.
 
@@ -119,8 +108,7 @@ Score = w_1 \cdot C_{main} + w_2 \cdot C_{sub} + w_3 \cdot D + w_4 \cdot R + w_5
 \end{equation}
 
 Definovali sme sedem testovacích scenárov so systematickou zmenou 
-váh $w_1$ až $w_6$, ktoré sa nachádzajú v priloženom dokumente
- \texttt{dop\_system\_vysledky.pdf}. Každý test obsahuje konfiguráciu váh,
+váh $w_1$ až $w_6$,. Každý test obsahuje konfiguráciu váh,
   prehľad piatich najlepších (TOP 5) odporúčaní a podrobný rozbor príspevkov jednotlivých faktorov
  k výslednému skóre (detailné výstupy sú uvedené v Prílohe~\ref{priloha:vysledky}).
 
@@ -130,7 +118,7 @@ Pri rovnomernom rozdelení ($w_i \approx 16.67\,\%$) dominujú v odporúčaniach
 udalosti s vysokým ratingom a obľúbené udalosti. Dôvodom sú vlastnosti
 normalizovaných vstupov:
 
-\begin{itemize}
+\begin{itemize}[noitemsep, nolistsep]
     \item \textbf{Obľúbený bonus:} Binárna hodnota (0 alebo 1) - automaticky
     posúva obľúbené udalosti o celú váhovú kategóriu vyššie.
     \item \textbf{Rating:} Väčšina podujatí má hodnotenie blízke 5 hviezdičkám,
@@ -180,7 +168,7 @@ Popularita       & 31\,\% & Najslabší faktor - nízka obsadenosť v testovacej
 
 Podkategória má najnižší reálny vplyv, jej zachovanie v algoritme má však
 strategický význam:
-\begin{itemize}
+\begin{itemize}[noitemsep, nolistsep]
     \item \textbf{Implicitné učenie:} Systém zachytí zmenu záujmov skôr, než si
     používateľ manuálne upraví profil.
     \item \textbf{Jemnosť odporúčaní:} Zabraňuje tomu, aby systém odporúčal všetky
@@ -205,7 +193,7 @@ Overovali sme, či systém správne predpovedá udalosti zodpovedajúce dominant
 kategórii používateľa. Vytvorili sme 5~profilov s jasne definovanou dominantnou
 kategóriou:
 
-\begin{itemize}
+\begin{itemize}[noitemsep, nolistsep]
     \item \textbf{Sporťák} - 6$\times$ Sports, 1$\times$ Art \& Culture, 1$\times$ Food \& Drinks
     \item \textbf{Hudobník} - 5$\times$ Music \& Entertainment, 1$\times$ Sports
     \item \textbf{Umelec} - 4$\times$ Art \& Culture, 1$\times$ Music \& Entertainment

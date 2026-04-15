@@ -33,95 +33,19 @@
   a \texttt{createdAt}.
 
   \paragraph{Odoslanie pozvánky:}
-  Organizátor môže odoslať pozvánku priamo z detailu udalosti kliknutím
-  na ikonu \texttt{PersonAdd} v hornej lište. Zobrazí sa dialóg s textovým
-  poľom pre zadanie e-mailovej adresy pozývaného používateľa.
+  Organizátor odošle pozvánku priamo z detailu udalosti zadaním
+  e-mailovej adresy pozývaného. Metóda \texttt{sendInvitation} najprv
+  overí existenciu používateľa v kolekcii \texttt{users} a následne
+  skontroluje duplicitu — ak pozvánka pre danú kombináciu
+  \texttt{eventId} a \texttt{toUserId} už existuje, odoslanie sa zamietne.
 
-  Logika odosielania je implementovaná v metóde \texttt{sendInvitation}
-  v \texttt{AppViewModel}. Metóda najprv vyhľadá používateľa podľa
-  e-mailovej adresy v kolekcii \texttt{users}. Ak používateľ neexistuje,
-  nastaví sa chybová správa. Následne sa overí, či pre danú kombináciu
-  \texttt{eventId} a \texttt{toUserId} pozvánka už existuje, čím sa
-  zabraňuje duplicitným pozvánkam:
-
-  \begin{lstlisting}[language=Kotlin, caption=Odoslanie pozvánky s kontrolou duplicity]
-  fun sendInvitation(
-      event        : Event,
-      fromUserId   : String,
-      fromUserName : String,
-      toEmail      : String
-  ) {
-      viewModelScope.launch {
-          val userSnap = db.collection("users")
-              .whereEqualTo("email", toEmail).get().await()
-          if (userSnap.isEmpty) {
-              invitationError = "Pouzivatel s tymto e-mailom neexistuje."
-              return@launch
-          }
-          val toUserId = userSnap.documents.first().id
-
-          val existing = db.collection("invitations")
-              .whereEqualTo("eventId",  event.id)
-              .whereEqualTo("toUserId", toUserId)
-              .get().await()
-          if (!existing.isEmpty) {
-              invitationError = "Tento pouzivatel uz bol pozvany."
-              return@launch
-          }
-
-          val docRef     = db.collection("invitations").document()
-          val invitation = Invitation(
-              id           = docRef.id,
-              eventId      = event.id,
-              eventTitle   = event.title,
-              eventPlace   = event.place,
-              fromUserId   = fromUserId,
-              fromUserName = fromUserName,
-              toUserId     = toUserId,
-              toEmail      = toEmail
-          )
-          docRef.set(invitation.toMap()).await()
-          invitationSuccess = "Pozvanka bola odoslana."
-      }
-  }
-  \end{lstlisting}
-
-  \paragraph{Načítanie a zobrazenie pozvánok:}
-  Pozvánky sa načítavajú pri spustení aplikácie v metóde
-  \texttt{loadInvitations}, ktorá z Firestore načíta všetky dokumenty,
-  kde \texttt{toUserId} zodpovedá aktuálne prihlásenému používateľovi.
-
+  \paragraph{Zobrazenie pozvánok:}
   Obrazovka \texttt{MyInvitationsScreen} rozdeľuje pozvánky do dvoch
   skupín: \textit{Čakajúce} (stav \texttt{pending}) a \textit{Vybavené}
-  (stav \texttt{accepted} alebo \texttt{declined}). Každá pozvánka je
-  zobrazená ako karta s názvom udalosti, miestom konania, menom
-  odosielateľa a farebným stavovým odznačkom.
+  (stav \texttt{accepted} alebo \texttt{declined}).
 
   \paragraph{Reakcia na pozvánku:}
-  Prijatie alebo odmietnutie pozvánky rieši metóda
-  \texttt{respondToInvitation}. V prípade prijatia sa stav aktualizuje
-  na \texttt{accepted} a zároveň sa automaticky zavolá \texttt{joinEvent},
-  čím sa používateľ priradí medzi účastníkov udalosti. Pri odmietnutí
-  sa stav nastaví iba na \texttt{declined} bez ďalšej akcie:
-
-  \begin{lstlisting}[language=Kotlin, caption=Reakcia na pozvánku]
-  fun respondToInvitation(
-      invitation    : Invitation,
-      accept        : Boolean,
-      currentUserId : String
-  ) {
-      val newStatus = if (accept) "accepted" else "declined"
-      val idx = _invitations.indexOfFirst { it.id == invitation.id }
-      if (idx >= 0) _invitations[idx] = invitation.copy(status = newStatus)
-
-      viewModelScope.launch {
-          db.collection("invitations").document(invitation.id)
-              .update("status", newStatus).await()
-          if (accept) joinEvent(invitation.eventId, currentUserId)
-      }
-  }
-  \end{lstlisting}
-
-  Výsledok operácie je používateľovi oznámený prostredníctvom správy
-  \texttt{Snackbar}, ktorú riadia stavové premenné \texttt{invitationSuccess}
-  a \texttt{invitationError} v \texttt{AppViewModel}.
+  Pri prijatí sa stav aktualizuje na \texttt{accepted} a automaticky
+  sa zavolá \texttt{joinEvent}, čím sa používateľ priradí medzi
+  účastníkov udalosti. Pri odmietnutí sa stav nastaví na
+  \texttt{declined} bez ďalšej akcie.

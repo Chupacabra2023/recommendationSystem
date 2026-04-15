@@ -1,16 +1,16 @@
-\subsection{Eventy — implementácia}                                                                                                                                                                                                                                 
+\subsection{Eventy - implementácia}                                                                                                                                                                                                                                 
 \subsubsection{Tvorba eventu}                                                                                                                                                                                                                                       
 Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrdení polohy na mape. Formulár obsahuje nasledujúce polia:
 
-\begin{itemize}[noitemsep] % SEM TO PATRÍ (hneď za begin{itemize})
-    \item \textbf{Názov a popis} — textové polia, obe sú povinné.                                                                                                                                                                                        
-    \item \textbf{Miesto} — predvyplnené adresou získanou z Geocoderu / Places API.
-    \item \textbf{Cena a počet účastníkov} — hodnota 0 znamená zadarmo, resp. neobmedzený počet.
-    \item \textbf{Dátum, čas a trvanie} — výber cez \texttt{DatePickerDialog} a \texttt{TimePickerDialog}; hodnota \texttt{dateTo} sa vypočíta automaticky z trvania.
-    \item \textbf{Kategória a podkategória} — výber z \texttt{CATEGORY\_MAP}.
-    \item \textbf{Viditeľnosť} — verejné alebo súkromné; súkromný event vyžaduje heslo.
-    \item \textbf{Typ check-in} — \texttt{none}, \texttt{qr}, \texttt{manual} alebo \texttt{qr\_and\_manual}.
-    \item \textbf{Deadline odhlásenia} — počet hodín pred eventom, po uplynutí ktorých sa odhlásenie penalizuje.
+\begin{itemize}[noitemsep, nolistsep] % SEM TO PATRÍ (hneď za begin{itemize})
+    \item \textbf{Názov a popis} - textové polia, obe sú povinné.                                                                                                                                                                                        
+    \item \textbf{Miesto} - predvyplnené adresou získanou z Geocoderu / Places API.
+    \item \textbf{Cena a počet účastníkov} - hodnota 0 znamená zadarmo, resp. neobmedzený počet.
+    \item \textbf{Dátum, čas a trvanie} - výber cez \texttt{DatePickerDialog} a \texttt{TimePickerDialog}; hodnota \texttt{dateTo} sa vypočíta automaticky z trvania.
+    \item \textbf{Kategória a podkategória} - výber z \texttt{CATEGORY\_MAP}.
+    \item \textbf{Viditeľnosť} - verejné alebo súkromné; súkromný event vyžaduje heslo.
+    \item \textbf{Typ check-in} - \texttt{none}, \texttt{qr}, \texttt{manual} alebo \texttt{qr\_and\_manual}.
+    \item \textbf{Deadline odhlásenia} - počet hodín pred eventom, po uplynutí ktorých sa odhlásenie penalizuje.
 \end{itemize}
 
   \paragraph{Upload obrázkov cez Cloudinary:}
@@ -43,7 +43,7 @@ Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrden
   Obrazovka detailu eventu (\texttt{EventDetailScreen.kt}) je rozdelená do
   troch tabov.
 
-  \paragraph{Tab 0 — Detail:}
+  \paragraph{Detail:}
   Zobrazuje všetky informácie o evente. Kľúčové stavy používateľa sú určené
   nasledovne:
 
@@ -56,17 +56,17 @@ Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrden
   val isBanned     = currentUserId in event.bannedUsers
   \end{lstlisting}
 
-  Tlačidlá akcie sa dynamicky menia podľa stavu — tvorca vidí úpravu
+  Tlačidlá akcie sa dynamicky menia podľa stavu - tvorca vidí úpravu
   a mazanie, prihlásený účastník odhlásenie, ostatní prihlásenie alebo
   zaradenie do poradovníka.
 
-  \paragraph{Tab 1 — Účastníci:}
+  \paragraph{Účastníci:}
   Zobrazuje zoznam účastníkov s avatarmi. Tvorca môže manuálne označiť
   príchod účastníka (ak \texttt{checkInType == "manual"}) alebo ho odstrániť
   — odstránený účastník je zároveň zablokovaný pre daný event a prvý
   z poradovníka je automaticky povýšený.
 
-  \paragraph{Tab 2 — Chat:}
+  \paragraph{Chat:}
   Real-time chat implementovaný pomocou Firestore \texttt{snapshotListener}.
   Prístup majú výlučne prihlásení účastníci a tvorca eventu.
 
@@ -94,48 +94,14 @@ Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrden
 
   \paragraph{leaveEvent — odhlásenie z eventu:}
   Pri odhlásení sa automaticky povýši prvý používateľ z poradovníka.
-  Ak sa používateľ odhlási po uplynutí deadlinu, je mu zaznamenaný no-show:
+  Ak sa používateľ odhlási po uplynutí deadlinu.
 
-  \begin{lstlisting}[language=Kotlin, caption=Odhlásenie z eventu]
-  fun leaveEvent(eventId: String, userId: String) {
-      val applyPenalty = event.isPastCancelDeadline()
-      var updated = event.copy(attendees = event.attendees - userId)
-      if (updated.waitlist.isNotEmpty()) {
-          val next = updated.waitlist.first()
-          updated = updated.copy(
-              attendees = updated.attendees + next,
-              waitlist  = updated.waitlist.drop(1)
-          )
-      }
-      if (applyPenalty) recordNoShow(userId, eventId)
-  }
-  \end{lstlisting}
-
-  \paragraph{removeAttendee — odstránenie účastníka tvorcom:}
-  Funguje rovnako ako odhlásenie, no navyše zaradí odstráneného účastníka
-  do zoznamu \texttt{bannedUsers}, čím mu zamedzí opätovné prihlásenie
-  na daný event.
-
-  % -------------------------------------------------------                                                                                                                                                                        
+                                                                                                                                                                      
   \subsubsection{Filtrovanie udalostí}
 
   Filtrovanie je implementované ako samostatná servisná trieda
   \texttt{EventFilterService}, ktorá prijíma kritériá zapuzdrené
   v dátovej triede \texttt{FilterCriteria}:
-
-  \begin{lstlisting}[language=Kotlin, caption=Dátová trieda FilterCriteria]
-  data class FilterCriteria(
-      val name          : String? = null,
-      val category      : String? = null,
-      val subcategory   : String? = null,
-      val participants  : Int?    = null,
-      val maxPrice      : Double? = null,
-      val dateFrom      : Date?   = null,
-      val maxDistanceKm : Double? = null,
-      val refLat        : Double  = 0.0,
-      val refLng        : Double  = 0.0
-  )
-  \end{lstlisting}
 
   Trieda \texttt{EventFilterService} aplikuje kritériá postupne — ak event
   nevyhovuje čo i len jednému z nich, je vyradený. Príklad jednej podmienky:
@@ -146,7 +112,7 @@ Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrden
       return false
   \end{lstlisting}
 
-  \paragraph{Výpočet vzdialenosti — Haversine:}
+  \paragraph{Výpočet vzdialenosti:}
   Na výpočet vzdialenosti medzi dvoma GPS súradnicami sa používa Haversine
   vzorec, ktorý zohľadňuje zakrivenie Zeme. Výsledkom je vzdialenosť
   v kilometroch ($R = 6371\ \text{km}$):
@@ -165,17 +131,3 @@ Obrazovka tvorby eventu (\texttt{EventCreationScreen.kt}) sa otvorí po potvrden
       return 6371.0 * 2 * asin(sqrt(a))
   }
   \end{lstlisting}
-
-  \paragraph{Filter bottom sheet — UI:}
-  Filter sa zobrazí ako \texttt{ModalBottomSheet} po kliknutí na „Nájsť
-  udalosť". Používateľ filtruje podľa názvu, kategórie, ceny, vzdialenosti
-  a dátumu. Po potvrdení sa zostavia kritériá a aplikujú na markery mapy:
-
-  \begin{lstlisting}[language=Kotlin, caption=Aplikovanie filtrov na mapu]
-  val filtered = EventFilterService(criteria).filter(events)
-  markers.values.forEach { it.isVisible = false }
-  filtered.forEach { event -> markers[event.id]?.isVisible = true }
-  \end{lstlisting}
-
-  Stav filtra sa ukladá do \texttt{AppViewModel.filterState}, čím sa
-  zachováva pri navigácii medzi obrazovkami.
